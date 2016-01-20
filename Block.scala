@@ -1,7 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import breeze.linalg.sum
-import breeze.numerics.{log, pow, exp, sigmoid}
+import breeze.numerics.{log, pow, sigmoid}
 
 
 /**
@@ -122,7 +122,11 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
   /**
    * Resets gradParam to zero
    */
-  def resetGradient(): Unit = gradParam.map(i => 0.0)
+  def resetGradient(): Unit = {
+    for(i <- 0 until gradParam.activeSize)
+      gradParam(i) = 0
+
+  }
   /**
    * Updates param using the accumulated gradient. Clips the gradient to the interval (-clip, clip) before the update
    * @param learningRate learning rate used for the update
@@ -148,9 +152,12 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
  */
 case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
   def forward(): Vector = {
-    args.map(_.forward().output).foldRight(doubleToVector(0))((arg, sum) => {
+    val stepSumVector = args.map(_.forward())
+    val init = vec((0 until stepSumVector(0).activeSize).map(i => 0.0):_*)
+    output = stepSumVector.foldRight(init)((arg, sum) => {
       sum :+= arg
     })
+    output
   }
   def backward(gradient: Vector): Unit = {
     args.foreach(_.backward(gradient))
@@ -170,8 +177,8 @@ case class Dot(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Double] {
   }
 
   def backward(gradient: Double): Unit = {
-    arg1.backward(arg2.output)
-    arg2.backward(arg1.output)
+    arg1.backward(arg2.output * gradient)
+    arg2.backward(arg1.output * gradient)
   }
 
   def update(learningRate: Double): Unit = {
@@ -191,8 +198,8 @@ case class Sigmoid(arg: Block[Double]) extends Block[Double] {
   }
   def backward(gradient: Double): Unit = {
     val x = arg.output
-    val localGradient = (-1) * exp(-x) / pow(1 + exp(-x), 2)
-    arg.backward(gradient*localGradient)
+    val localGradient = sigmoid(x) * (1 - sigmoid(x))
+    arg.backward(localGradient * gradient)
   }
   def update(learningRate: Double): Unit = arg.update(learningRate)
 }
@@ -204,13 +211,15 @@ case class Sigmoid(arg: Block[Double]) extends Block[Double] {
  */
 case class NegativeLogLikelihoodLoss(arg: Block[Double], target: Double) extends Loss {
   def forward(): Double = {
-    output = (-1) * target * log(arg.forward()) - (1-target) * log(1-arg.forward())
+    val x = arg.forward()
+    output = - target * log(x) - (1-target) * log(1-x)
     output
   }
   // loss functions are root nodes so they don't have upstream gradients
   def backward(gradient: Double): Unit = backward()
   def backward(): Unit = {
-    val gradient = (-1) * target / arg.output - (1 + target)/(1 - arg.output)
+    val x = arg.output
+    val gradient = - target/x + (1 - target)/(1 - x)
     arg.backward(gradient)
   }
   def update(learningRate: Double): Unit = arg.update(learningRate)

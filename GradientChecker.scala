@@ -74,10 +74,15 @@ object GradientChecker extends App {
   val simpleDotBlock = Dot(a, b)
   GradientChecker(simpleDotBlock, b)
 
-// todo create testing blocks Sigmoid(Dot(x,x))
-//  val identityDotBlock = Dot(a, b)
-//  val sigmoidBlock = Sigmoid(identityDotBlock)
-//  val expected = VectorParam(4)
-//  expected.set(vec(1.0, 2.0, -0.5, 2.5))
-//  GradientChecker(sigmoidBlock, expected)
+  val sumBlock = Sum(Seq(a,b))
+  GradientChecker(Dot(sumBlock, sumBlock), b)
+
+  val sigmoidBlock = Sigmoid(Dot(a, b))
+  GradientChecker(sigmoidBlock, b)
+
+  val negativeLogLikelihoodLossBlock = NegativeLogLikelihoodLoss(Sigmoid(Dot(a, b)), 0.5)
+  GradientChecker(negativeLogLikelihoodLossBlock, b)
+
+  val l2RegularizationBlock = L2Regularization(1, b)
+  GradientChecker(l2RegularizationBlock, b)
 }

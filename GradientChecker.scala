@@ -1,8 +1,11 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
+<<<<<<< HEAD
 import breeze.linalg.{QuasiTensor, TensorLike, sum}
 import breeze.numerics._
 
+=======
+>>>>>>> 85bbc115d09b2565cf76c81967de75f6c1f6b2f8
 /**
  * Problem 1
  */
@@ -54,7 +57,11 @@ object GradientChecker extends App {
 
     for (i <- 0 until gradient.activeSize) {
       //todo: your code goes here!
+<<<<<<< HEAD
       val gradientExpected: Double = ???
+=======
+      val gradientExpected: Double = ( wiggledForward(i, EPSILON) - wiggledForward(i, -EPSILON) ) / ( 2 * EPSILON )
+>>>>>>> 85bbc115d09b2565cf76c81967de75f6c1f6b2f8
 
       avgError = avgError + math.abs(gradientExpected - gradient(i))
 
@@ -64,7 +71,10 @@ object GradientChecker extends App {
           s"Expected gradient for ${i}th component in input is $gradientExpected but I got ${gradient(i)}"
       )
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 85bbc115d09b2565cf76c81967de75f6c1f6b2f8
     println("Average error: " + avgError)
   }
 
@@ -74,7 +84,31 @@ object GradientChecker extends App {
     */
   val a = vec(-1.5, 1.0, 1.5, 0.5)
   val b = VectorParam(4)
+<<<<<<< HEAD
   b.set(vec(1.0, 2.0, -0.5, 2.5))
   val simpleBlock = Dot(a, b)
   GradientChecker(simpleBlock, b)
+=======
+  val matrix = MatrixParam(2,2)
+  matrix.set(mat(2,2)(-1.5, 1.0, -2.0, 2.2))
+
+  b.set(vec(1.0, 2.0, -0.5, 2.5))
+  val simpleDotBlock = Dot(a, b)
+  GradientChecker(simpleDotBlock, b)
+
+  val sumBlock = Sum(Seq(a,b))
+  GradientChecker(Dot(sumBlock, sumBlock), b)
+
+  val sigmoidBlock = Sigmoid(Dot(a, b))
+  GradientChecker(sigmoidBlock, b)
+
+  val negativeLogLikelihoodLossBlock = NegativeLogLikelihoodLoss(Sigmoid(Dot(a, b)), 0.5)
+  GradientChecker(negativeLogLikelihoodLossBlock, b)
+
+  val l2RegularizationBlock = L2Regularization(1, b)
+  val l2RegularizationBlockMatr = L2Regularization(1, matrix)
+
+  GradientChecker(l2RegularizationBlock, b)
+  GradientChecker(l2RegularizationBlockMatr, matrix)
+>>>>>>> 85bbc115d09b2565cf76c81967de75f6c1f6b2f8
 }

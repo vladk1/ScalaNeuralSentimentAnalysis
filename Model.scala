@@ -71,24 +71,24 @@ trait Model {
  * @param embeddingSize dimension of the word vectors used in this model
  * @param regularizationStrength strength of the regularization on the word vectors and global parameter vector w
  */
-class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double = 0.0) extends Model {
+class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double = 5.5) extends Model {
   /**
    * We use a lookup table to keep track of the word representations
    */
-  override val vectorParams: mutable.HashMap[String, VectorParam] =
-    LookupTable.trainableWordVectors
+  override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
+
   /**
    * We are also going to need another global vector parameter
    */
-  vectorParams += "param_w" -> VectorParam(???)
+  vectorParams += "param_w" -> VectorParam(embeddingSize)
 
-  def wordToVector(word: String): Block[Vector] = ???
+  def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
-  def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = ???
+  def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = Sum(words)
 
-  def scoreSentence(sentence: Block[Vector]): Block[Double] = ???
+  def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams.get("param_w").get))
 
-  def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, ???)
+  def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
 }
 
 

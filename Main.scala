@@ -10,7 +10,7 @@ object Main extends App {
    * Problems 2/3/4: perform a grid search over the parameters below
    */
   val learningRate = 0.01
-  val vectorRegularizationStrength = 0.1
+  val vectorRegularizationStrength = 0.05
   val matrixRegularizationStrength = 0.0
   val wordDim = 15
   val hiddenDim = 10
@@ -28,14 +28,15 @@ object Main extends App {
 
   StochasticGradientDescentLearner(model, trainSetName, 100, learningRate, epochHook)
 
-
   /**
    * Comment this in if you want to look at trained parameters
    */
-//  for ((paramName, paramBlock) <- model.vectorParams) {
-//    println(s"$paramName:\n${paramBlock.param}\n")
-//  }
-//  for ((paramName, paramBlock) <- model.matrixParams) {
-//    println(s"$paramName:\n${paramBlock.param}\n")
-//  }
+  /*
+  for ((paramName, paramBlock) <- model.vectorParams) {
+    println(s"$paramName:\n${paramBlock.param}\n")
+  }
+  for ((paramName, paramBlock) <- model.matrixParams) {
+    println(s"$paramName:\n${paramBlock.param}\n")
+  }
+  */
 }

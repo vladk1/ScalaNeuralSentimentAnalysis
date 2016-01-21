@@ -1,8 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
-import breeze.linalg.sum
-import breeze.numerics.{abs, log, pow, sigmoid}
 import breeze.linalg._
+import breeze.numerics.{log, pow, sigmoid, tanh}
 
 
 /**

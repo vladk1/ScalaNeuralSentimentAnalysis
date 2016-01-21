@@ -71,7 +71,8 @@ trait Model {
  * @param embeddingSize dimension of the word vectors used in this model
  * @param regularizationStrength strength of the regularization on the word vectors and global parameter vector w
  */
-class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double = 8.5) extends Model {
+
+class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double = 5.5) extends Model {
   /**
    * We use a lookup table to keep track of the word representations
    */

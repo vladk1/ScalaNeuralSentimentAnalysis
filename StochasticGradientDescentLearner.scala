@@ -14,9 +14,10 @@ object StochasticGradientDescentLearner extends App {
         val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
 
         val objectiveJLoss = model.loss(sentence, target)
+
         accLoss = accLoss + objectiveJLoss.forward()
 
-        val gradient = objectiveJLoss.backward()
+        objectiveJLoss.backward()
         objectiveJLoss.update(learningRate) // updates parameters of the block
       }
       epochHook(i, accLoss)

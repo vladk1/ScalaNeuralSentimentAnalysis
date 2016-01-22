@@ -23,5 +23,13 @@ object LookupTable {
     trainableWordVectors.getOrElseUpdate(word, param)
   }
 
+  def resetVectors() = {
+    trainableWordVectors.foreach {
+      case (key: String, value: VectorParam) => {
+        value.resetGradient()
+      }
+    }
+  }
+
   def get(word: String): Block[Vector] = trainableWordVectors.getOrElse(word, fixedWordVectors(word))
 }

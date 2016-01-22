@@ -47,7 +47,7 @@ trait Model {
    * Defines the training loss
    * @param sentence a tweet as a sequence of words
    * @param target the gold label of the tweet (true: positive sentiement, false: negative sentiment)
-   * @return a block evaluating to the negative log-likelihod plus a regularization term
+   * @return a block evaluating to the negative log-likelihood plus a regularization term
    */
   def loss(sentence: Seq[String], target: Boolean): Loss = {
     val targetScore = if (target) 1.0 else 0.0
@@ -71,8 +71,7 @@ trait Model {
  * @param embeddingSize dimension of the word vectors used in this model
  * @param regularizationStrength strength of the regularization on the word vectors and global parameter vector w
  */
-
-class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double = 5.5) extends Model {
+class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double = 1000.0) extends Model {
   /**
    * We use a lookup table to keep track of the word representations
    */
@@ -87,11 +86,15 @@ class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double =
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = Sum(words)
 
-  def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams.get("param_w").get))
+  def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
 
-  def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
+  def regularizer(words: Seq[Block[Vector]]): Loss = {
+    L2Regularization(regularizationStrength, words :+ vectorParams("param_w"):_*)
+  }
+//  words :+ vectorParams("param_w") :_*
+//    L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
 }
-
+//words :+ vectorPar :_*
 
 /**
  * Problem 3

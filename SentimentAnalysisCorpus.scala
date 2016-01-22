@@ -1,12 +1,6 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
-<<<<<<< HEAD
-import java.io.PrintWriter
 
-import com.github.tototoshi.csv._
-
-=======
->>>>>>> 85bbc115d09b2565cf76c81967de75f6c1f6b2f8
 import scala.util.Random
 
 /**

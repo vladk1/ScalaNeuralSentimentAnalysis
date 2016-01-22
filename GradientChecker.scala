@@ -72,6 +72,10 @@ object GradientChecker extends App {
   val b = VectorParam(4)
   val matrix = MatrixParam(2,2)
   matrix.set(mat(2,2)(-1.5, 1.0, -2.0, 2.2))
+  val matr1 = MatrixParam(3,3)
+//  matr1.set(mat(3,3)(0.0, 1.0, 1.0, 2.0, 1.0, 2.0, 3.0, 0.0, 0.0))
+  val vect = VectorParam(3)
+//  vect.set(vec(1.0, 2.0, 5.0))
 
   b.set(vec(1.0, 2.0, -0.5, 2.5))
   val simpleDotBlock = Dot(a, b)
@@ -91,4 +95,10 @@ object GradientChecker extends App {
 
   GradientChecker(l2RegularizationBlock, b)
   GradientChecker(l2RegularizationBlockMatr, matrix)
+
+  val mulBlock = Mul(matr1, vect)
+  GradientChecker(Dot(mulBlock,mulBlock), matr1)
+
+  val simpleTanBlock = Tanh(b)
+  GradientChecker(Dot(simpleTanBlock, simpleTanBlock), b)
 }

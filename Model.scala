@@ -134,87 +134,46 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
     // convert words to indexed seq
     val indexedWords = words.toIndexedSeq
     // create placeholder vector for sentence
-
     var sentence = DenseVector.zeros[Double](words.size * embeddingSize)
-    sentence.forward()
-//    println("print senetence init" + sentence.ou)
     // loop through words and use logic index to move words to index in sentence vector
     for (i <- 0 until words.size) {
-//      println("word size" + words.size)
       val start = i * embeddingSize
       val end = start + embeddingSize
       val word = indexedWords(i).forward()
-//      println(start + " " + end)
-//      println(sentence(start until end))
       sentence(start until end) := indexedWords(i).forward()
-//      println()
-//      println("eq" + word == sentence(start until end))
-//      println(word)
-//      println(sentence(start until end))
     }
-
-//    println("sentence " + sentence)
     sentence
   }
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = {
     // make initial copy of h0
-//    var ht = vectorParams("param_h0")
-//    vectorParams("param_b").set(vec(DenseVector.zeros[Double](hiddenSize).toArray.toSeq:_*))
-//    vectorParams("param_b").forward()
-//    val h0 = DenseVector.zeros[Double](hiddenSize)
     var ht = VectorParam(hiddenSize)
-//    ht.set(vec(DenseVector.zeros[Double](hiddenSize).toArray.toSeq:_*))
-//    ht.forward()
-//    println(ht.output)
-//    println("init ht" + ht.forward())
-    // loop through each words
     sentence.forward()
     val numWords = (sentence.output.activeSize / embeddingSize)
-//    print("words " + numWords)
     for(i <- 0 until numWords) {
-//      println("num words" + sentence.forward().activeSize / embeddingSize)
-      // set start and end index to retrieve word vector
+      // set start and end index to retrieve word (x_t) vector
       val start = i * embeddingSize
       val end = start + embeddingSize
       val xt = sentence.output(start until end)
-//      println(ht.output)
-      // perform ht calculation
+      // perform ht calculation (tanh function)
       val Whhtprev = Mul(matrixParams("param_Wh"), ht)
       val Wxxt = Mul(matrixParams("param_Wx"), xt)
       val b = vectorParams("param_b")
       val htupdate = Tanh(Sum(Seq(Whhtprev, Wxxt, b)))
       // update ht param
-//      print(ht.output)
-//      println("old ht" + ht.forward())
-//      println("new score" + score.forward())
       ht.set(htupdate.forward())
       ht.forward()
 
-//      println("new ht" + ht.forward())
     }
     // set h_n as sentence representation
-//    println("final ht" + ht.forward())
-//    println("size of ht = " + ht.gradParam.activeSize + "   " + ht.param.activeSize)
-//    println("dot ht ht" + Dot(ht,ht).forward())
-//    println("dot ht b" + Dot(ht,vectorParams("param_b")).forward())
-//    println
     val sentenceScore = Sigmoid(Dot(ht, vectorParams("param_w")))
-//    println(sentenceScore.forward())
-//    sentenceScore
-//    sentenceScore.forward()
-
-//    val sentenceScore = Sigmoid(DoubleConstant(sum(ht.output) / hiddenSize))
     println(sentenceScore.forward())
     sentenceScore
-//    Sigmoid(Dot(ht, vectorParams()))
   }
 
   def regularizer(words: Seq[Block[Vector]]): Loss =
     new LossSum(
       L2Regularization(vectorRegularizationStrength, vectorParams("param_w")),
       L2Regularization(matrixRegularizationStrength, matrixParams("param_Wx"))
-//      L2Regularization(vectorRegularizationStrength, wordVectorsToSentenceVector(words)),
-//      L2Regularization(matrixRegularizationStrength, wordVectorsToSentenceVector(words))
     )
 }

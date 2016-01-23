@@ -1,5 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
+//import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
+
 
 import scala.util.Random
 
@@ -8,7 +10,11 @@ import scala.util.Random
  */
 object SentimentAnalysisCorpus {
   val random = new Random(0L)
-  def tokenize(sentence: String): Seq[String] = sentence.split(" ")
+  def tokenize(sentence: String): Seq[String] = {
+    sentence.split(" ")
+//    for better tokenizer:
+//    SentenceSplitter(TokenSplitter(sentence)).tokenWords
+  }
 
   def loadCorpus(lines: Iterator[String]): Corpus = lines.map(s => {
     val (target, tweet) = s.splitAt(1)

@@ -90,8 +90,8 @@ object GradientChecker extends App {
   val negativeLogLikelihoodLossBlock = NegativeLogLikelihoodLoss(Sigmoid(Dot(a, b)), 0.5)
   GradientChecker(negativeLogLikelihoodLossBlock, b)
 
-  val l2RegularizationBlock = L2Regularization(1, b)
-  val l2RegularizationBlockMatr = L2Regularization(1, matrix)
+  val l2RegularizationBlock = L2Regularization(10, b)
+  val l2RegularizationBlockMatr = L2Regularization(10, matrix)
 
   GradientChecker(l2RegularizationBlock, b)
   GradientChecker(l2RegularizationBlockMatr, matrix)

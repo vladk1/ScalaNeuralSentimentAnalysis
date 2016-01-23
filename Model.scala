@@ -167,7 +167,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
     }
     // set h_n as sentence representation
     val sentenceScore = Sigmoid(Dot(ht, vectorParams("param_w")))
-    println(sentenceScore.forward())
+//    println(sentenceScore.forward())
     sentenceScore
   }
 

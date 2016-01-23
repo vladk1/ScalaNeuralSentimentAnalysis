@@ -1,7 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import breeze.linalg._
-import breeze.numerics.{log, pow, sigmoid, tanh}
+import breeze.numerics.{tanh, log, pow, sigmoid}
 
 
 /**
@@ -105,8 +105,9 @@ class LossSum(override val args: Loss*) extends DoubleSum(args:_*) with Loss {
   * @param clip defines range in which gradients are clipped, i.e., (-clip, clip)
   */
 case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector] with GaussianDefaultInitialization {
-  var param: Vector = vec((0 until dim).map(i => defaultInitialization()):_*)
-  val gradParam: Vector = vec((0 until dim).map(i => 0.0):_*)
+  var param: Vector = initialize(defaultInitialization)//vec((0 until dim).map(i => defaultInitialization()):_*)
+  val gradParam: Vector = DenseVector.zeros[Double](dim)//vec((0 until dim).map(i => 0.0):_*)
+
   /**
     * @return the current value of the vector parameter and caches it into output
     */
@@ -123,9 +124,8 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
     * Resets gradParam to zero
     */
   def resetGradient(): Unit = {
-    for(i <- 0 until gradParam.activeSize)
-      gradParam(i) = 0
-
+//    for(i <- 0 until gradParam.activeSize)
+      gradParam := DenseVector.zeros[Double](dim)
   }
   /**
     * Updates param using the accumulated gradient. Clips the gradient to the interval (-clip, clip) before the update
@@ -252,9 +252,9 @@ case class L2Regularization[P](strength: Double, args: Block[P]*) extends Loss {
   def backward(gradient: Double): Unit = backward()
   // Vlad: R(x)' = vec(strength*x_1, strength*x_2, strength*x_3 ...)
   def backward(): Unit = args.foreach(x => x.backward((x.output match {
-    case v: Vector => strength :* v
-    //    case w: Matrix => w.toDenseVector.map(w_i => strength * w_i)
-    case w: Matrix => strength :* w
+    case v: Vector => v :* strength
+//    case w: Matrix => w.toDenseVector.map(w_i => strength * w_i)
+    case w: Matrix => w :* strength
   }).asInstanceOf[P]))
 }
 

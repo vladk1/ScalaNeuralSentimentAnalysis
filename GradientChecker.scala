@@ -76,7 +76,9 @@ object GradientChecker extends App {
     */
   val a = vec(-1.5, 1.0, 1.5, 0.5)
   val b = VectorParam(4)
+  println("b" + b.forward())
   b.set(vec(1.0, 2.0, -0.5, 2.5))
+  println("b after" + b.forward())
   val simpleBlock = Dot(a, b)
   GradientChecker(simpleBlock, b)
 
@@ -111,4 +113,21 @@ object GradientChecker extends App {
 
   val simpleTanBlock = Tanh(b)
   GradientChecker(Dot(simpleTanBlock, simpleTanBlock), b)
+
+  // test RNN model
+  val w = VectorParam(15)
+  val h0 = VectorParam(10)
+  val bias = VectorParam(10)
+  val wx = MatrixParam(10, 10)
+  val wh = MatrixParam(10, 10)
+
+  val sentence = VectorParam(10)
+
+  val Whhtprev = Mul(wh, h0)
+  val Wxxt = Mul(wx, sentence)
+  val score = Tanh(Sum(Seq(Whhtprev, Wxxt, bias)))
+  val RNNBlock = Sigmoid(Dot(score, bias))
+  println("Gradient check RNN block")
+  GradientChecker(RNNBlock, bias)
+
 }

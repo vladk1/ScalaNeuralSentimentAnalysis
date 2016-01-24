@@ -128,7 +128,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   matrixParams += "param_Wh" -> MatrixParam(hiddenSize, hiddenSize)
 
   // experimental parameter initialization
-//  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
+  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
 //    println(vectorParams("param_b").forward())
 //  vectorParams("param_w").set(DenseVector.zeros[Double](hiddenSize))
 //  println(vectorParams("param_w").forward())
@@ -136,73 +136,25 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
-    // convert words to indexed seq
-    val indexedWords = words.toIndexedSeq
-    // create placeholder vector for sentence
-    var sentence = DenseVector.zeros[Double](words.size * embeddingSize)
-    // loop through words and use logic index to move words to index in sentence vector
-    for (i <- 0 until words.size) {
-      val start = i * embeddingSize
-      val end = start + embeddingSize
-//      val word = indexedWords(i).forward()
-//      println(indexedWords(i))
-      val word = indexedWords(i).forward()
-      sentence(start until end) := word
-    }
-    sentence
+    val h0:Block[Vector] = vectorParams("param_h0")
+    val hn = words.foldLeft(h0)((h_prev, wordVector) => {
+      val Wh_h_prev = Mul(matrixParams("param_Wh"), h_prev)
+      val Wx_x_t = Mul(matrixParams("param_Wx"), wordVector)
+      val b = vectorParams("param_b")
+      val new_h = Tanh(Sum(Seq(Wh_h_prev, Wx_x_t, b)))
+      new_h
+    })
+    hn
   }
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = {
-    // make initial copy of h0
-//    var ht = VectorParam(hiddenSize)
-//    ht.set(DenseVector.zeros[Double](hiddenSize))
-//    vectorParams("param_h0").set(DenseVector.zeros[Double](hiddenSize))
-//    println(vectorParams("param_h0").output)
-//    sentence.forward()
-    val numWords = (sentence.output.activeSize / embeddingSize)
-    for(i <- 0 until numWords) {
-      // set start and end index to retrieve word (x_t) vector
-      val start = i * embeddingSize
-      val end = start + embeddingSize
-      val xt = sentence.output(start until end)
-      // perform ht calculation (tanh function)
-      val Whhtprev = Mul(matrixParams("param_Wh"), vectorParams("param_h0"))
-//      println("after whhtprev" + vectorParams("param_h0").output)
-      val Wxxt = Mul(matrixParams("param_Wx"), xt)
-      val b = vectorParams("param_b")
-      val htupdate = Tanh(Sum(Seq(Whhtprev, Wxxt, b)))
-
-      // update global weight vector
-//      vectorParams("param_w").update(0.01)
-
-      // update ht param
-//      ht.set(htupdate.forward())
-//      ht.forward()
-      vectorParams("param_h0").set(htupdate.forward())
-
-
-
-    }
-
-//    println("ht size" + ht.output.activeSize)
-//    println(vectorParams("param_w").forward())
-//    println(matrixParams("param_Wx").forward().activeSize)
-
-    // set h_n as sentence representation
-//    val sentenceScore = Sigmoid(Dot(ht, vectorParams("param_w")))
-//    println(Mul(matrixParams("param_Wx"), vectorParams("param_w")).forward().activeSize)
-    val sentenceScore = Sigmoid(Dot(vectorParams("param_h0"), vectorParams("param_w")))
-//    val sentenceScore = Sigmoid(Dot(ht, Mul(matrixParams("param_Wx"), vectorParams("param_w"))))
-
-
+    val sentenceScore = Sigmoid(Dot(sentence, vectorParams("param_w")))
 //    println(sentenceScore.forward())
     sentenceScore
   }
 
   def regularizer(words: Seq[Block[Vector]]): Loss =
     new LossSum(
-//      L2Regularization(vectorRegularizationStrength, vectorParams("param_w")),
-//      L2Regularization(matrixRegularizationStrength, matrixParams("param_Wx"))
         L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0") :+ vectorParams("param_b"):_*),
         L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_Wh") :+ matrixParams("param_Wx"):_*)
     )

@@ -22,9 +22,9 @@ object Main extends App {
    */
 
 //    Using for RNN (single run)
-  val learningRate = 0.1 // tried 0.01, 0.1, 1.0, 10.0, 1.0,
-  val vectorRegularizationStrength = 0.00001 // tried 0.01, 0.1, 0.01, _, _, 5.0
-  val matrixRegularizationStrength = 0.00001 // tried 0.01, 0.1, 0.01, _, _, 5.0
+  val learningRate = 0.01 // tried 0.01, 0.1, 1.0, 10.0, 1.0,
+  val vectorRegularizationStrength = 0.01 // tried 0.01, 0.1, 0.01, _, _, 5.0
+  val matrixRegularizationStrength = 0.0 // tried 0.01, 0.1, 0.01, _, _, 5.0
   val wordDim = 10 // tried 10, 5
   val hiddenDim = 10 // tried 10, 5
 

@@ -103,7 +103,6 @@ class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double =
 //  words :+ vectorParams("param_w") :_*
 //    L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
 }
-//words :+ vectorPar :_*
 
 /**
  * Problem 3
@@ -119,7 +118,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
                                   matrixRegularizationStrength: Double = 0.0) extends Model {
   override val vectorParams: mutable.HashMap[String, VectorParam] =
     LookupTable.trainableWordVectors
-  vectorParams += "param_w" -> VectorParam(hiddenSize)
+  vectorParams += "param_w" -> VectorParam(embeddingSize)
   vectorParams += "param_h0" -> VectorParam(hiddenSize)
   vectorParams += "param_b" -> VectorParam(hiddenSize)
 
@@ -127,6 +126,12 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
     new mutable.HashMap[String, MatrixParam]()
   matrixParams += "param_Wx" -> MatrixParam(hiddenSize, embeddingSize)
   matrixParams += "param_Wh" -> MatrixParam(hiddenSize, hiddenSize)
+
+  // experimental parameter initialization
+//  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
+//    println(vectorParams("param_b").forward())
+//  vectorParams("param_w").set(DenseVector.zeros[Double](hiddenSize))
+//  println(vectorParams("param_w").forward())
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
@@ -148,7 +153,8 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   def scoreSentence(sentence: Block[Vector]): Block[Double] = {
     // make initial copy of h0
     var ht = VectorParam(hiddenSize)
-    sentence.forward()
+    ht.set(DenseVector.zeros[Double](hiddenSize))
+//    sentence.forward()
     val numWords = (sentence.output.activeSize / embeddingSize)
     for(i <- 0 until numWords) {
       // set start and end index to retrieve word (x_t) vector
@@ -160,20 +166,38 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
       val Wxxt = Mul(matrixParams("param_Wx"), xt)
       val b = vectorParams("param_b")
       val htupdate = Tanh(Sum(Seq(Whhtprev, Wxxt, b)))
+
+      // update global weight vector
+//      vectorParams("param_w").update(0.01)
+
       // update ht param
       ht.set(htupdate.forward())
       ht.forward()
 
+
+
     }
+
+//    println("ht size" + ht.output.activeSize)
+//    println(vectorParams("param_w").forward())
+//    println(matrixParams("param_Wx").forward().activeSize)
+
     // set h_n as sentence representation
+//    val sentenceScore = Sigmoid(Dot(ht, vectorParams("param_w")))
+//    println(Mul(matrixParams("param_Wx"), vectorParams("param_w")).forward().activeSize)
     val sentenceScore = Sigmoid(Dot(ht, vectorParams("param_w")))
+//    val sentenceScore = Sigmoid(Dot(ht, Mul(matrixParams("param_Wx"), vectorParams("param_w"))))
+
+
 //    println(sentenceScore.forward())
     sentenceScore
   }
 
   def regularizer(words: Seq[Block[Vector]]): Loss =
     new LossSum(
-      L2Regularization(vectorRegularizationStrength, vectorParams("param_w")),
-      L2Regularization(matrixRegularizationStrength, matrixParams("param_Wx"))
+//      L2Regularization(vectorRegularizationStrength, vectorParams("param_w")),
+//      L2Regularization(matrixRegularizationStrength, matrixParams("param_Wx"))
+        L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0") :+ vectorParams("param_b"):_*),
+        L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_Wh") :+ matrixParams("param_Wx"):_*)
     )
 }

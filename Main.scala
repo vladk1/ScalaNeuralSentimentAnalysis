@@ -24,17 +24,20 @@ object Main extends App {
 //    Using for RNN
   val learningRate = 0.01 // tried 0.01, 0.1, 1.0, 10.0, 1.0,
   val vectorRegularizationStrength = 0.01 // tried 0.01, 0.1, 0.01, _, _, 5.0
-  val matrixRegularizationStrength = 0.01 // tried 0.01, 0.1, 0.01, _, _, 5.0
-  val wordDim = 5 // tried 10, 5
+  val matrixRegularizationStrength = 0.0 // tried 0.01, 0.1, 0.01, _, _, 5.0
+  val wordDim = 10 // tried 10, 5
   val hiddenDim = 10 // tried 10, 5
 
   val trainSetName = "train"
   val validationSetName = "dev"
 
+//  val trainSetName = "debug"
+//  val validationSetName = "dev"
+
   val wordDimSet = 5 to 13 by 1
   val vectorRegStrengthSet = 0.001 to 0.015 by 0.005 // in case Nan - higher regularizer
   // in case Nan - lower learning rate (hence we can stop iterating after reaching Nan in this loop)
-  val learningRateSet = 0.001 to 0.99 by 0.01
+  val learningRateSet = 0.01 to 0.99 by 0.01
 
   //  1) 75.43  (6, 0.45, 0.06) with 1 iteration:
   //  2) 77.16  (7, 0.1, 0.05) -//-
@@ -43,7 +46,17 @@ object Main extends App {
   //  5) 75.099 (7, 0.01, 0.01) 10 iter
   //  6) 75.433 (6, 0.001, 0.001) 10 iter
   //  runs grid search and prints best params:
+  /**
+   * Grid Search
+   */
 //    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 1)
+  /**
+    * SGDL
+    */
+  // run norm SGDL with RNN model for debug
+  val SGDLmodel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
+  StochasticGradientDescentLearner(SGDLmodel, trainSetName, 100, learningRate, epochHook)
+
 
 //  prints vectorparams to file
 //  writeVectorsFromBestModelToFile(7, 0.1, 0.05, 10)
@@ -118,7 +131,8 @@ def runGridSearch(wordDimSet:Range, vectorRegStrengthSet:NumericRange[Double], l
   }
 
   def runSGDwithParam(wordDim:Int, vectorRegStrength:Double, learningRate:Double, isFirstRun:Boolean, epochs:Int):Unit = {
-    val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegStrength)
+//    val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegStrength)
+    val gridSearchModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegStrength, vectorRegStrength)
     StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, epochHook)
     println("wordDim %d\tvectorRegStrength %4.2f\tlearningRate %4.2f\t".format(wordDim, vectorRegStrength, learningRate))
     if (hasExplodingGradient(gridSearchModel)) {
@@ -141,8 +155,8 @@ def runGridSearch(wordDimSet:Range, vectorRegStrengthSet:NumericRange[Double], l
     * RNN Section
     */
 
-  val RNNmodel: Model = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
-  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, learningRate, epochHook)
+//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
+//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, learningRate, epochHook)
 
   /**
    * Comment this in if you want to look at trained parameters

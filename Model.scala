@@ -98,7 +98,7 @@ class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double =
 
 
   def regularizer(words: Seq[Block[Vector]]): Loss = {
-    L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
+    L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :_*)
   }
 //  words :+ vectorParams("param_w") :_*
 //    L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))

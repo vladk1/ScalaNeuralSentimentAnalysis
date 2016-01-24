@@ -98,7 +98,7 @@ class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double =
 
 
   def regularizer(words: Seq[Block[Vector]]): Loss = {
-    L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
+    L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :_*)
   }
 //  words :+ vectorParams("param_w") :_*
 //    L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
@@ -144,16 +144,20 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
     for (i <- 0 until words.size) {
       val start = i * embeddingSize
       val end = start + embeddingSize
+//      val word = indexedWords(i).forward()
+//      println(indexedWords(i))
       val word = indexedWords(i).forward()
-      sentence(start until end) := indexedWords(i).forward()
+      sentence(start until end) := word
     }
     sentence
   }
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = {
     // make initial copy of h0
-    var ht = VectorParam(hiddenSize)
-    ht.set(DenseVector.zeros[Double](hiddenSize))
+//    var ht = VectorParam(hiddenSize)
+//    ht.set(DenseVector.zeros[Double](hiddenSize))
+//    vectorParams("param_h0").set(DenseVector.zeros[Double](hiddenSize))
+//    println(vectorParams("param_h0").output)
 //    sentence.forward()
     val numWords = (sentence.output.activeSize / embeddingSize)
     for(i <- 0 until numWords) {
@@ -162,7 +166,8 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
       val end = start + embeddingSize
       val xt = sentence.output(start until end)
       // perform ht calculation (tanh function)
-      val Whhtprev = Mul(matrixParams("param_Wh"), ht)
+      val Whhtprev = Mul(matrixParams("param_Wh"), vectorParams("param_h0"))
+//      println("after whhtprev" + vectorParams("param_h0").output)
       val Wxxt = Mul(matrixParams("param_Wx"), xt)
       val b = vectorParams("param_b")
       val htupdate = Tanh(Sum(Seq(Whhtprev, Wxxt, b)))
@@ -171,8 +176,9 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
 //      vectorParams("param_w").update(0.01)
 
       // update ht param
-      ht.set(htupdate.forward())
-      ht.forward()
+//      ht.set(htupdate.forward())
+//      ht.forward()
+      vectorParams("param_h0").set(htupdate.forward())
 
 
 
@@ -185,7 +191,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
     // set h_n as sentence representation
 //    val sentenceScore = Sigmoid(Dot(ht, vectorParams("param_w")))
 //    println(Mul(matrixParams("param_Wx"), vectorParams("param_w")).forward().activeSize)
-    val sentenceScore = Sigmoid(Dot(ht, vectorParams("param_w")))
+    val sentenceScore = Sigmoid(Dot(vectorParams("param_h0"), vectorParams("param_w")))
 //    val sentenceScore = Sigmoid(Dot(ht, Mul(matrixParams("param_Wx"), vectorParams("param_w"))))
 
 

@@ -26,15 +26,10 @@ object Main extends App {
   val vectorRegularizationStrength = 0.01 // tried 0.01, 0.1, 0.01, _, _, 5.0
   val matrixRegularizationStrength = 0.0 // tried 0.01, 0.1, 0.01, _, _, 5.0
   val wordDim = 10 // tried 10, 5
-  val hiddenDim = 10 // tried 10, 5
+  val hiddenDim = 5 // tried 10, 5
 
   val trainSetName = "train"
   val validationSetName = "dev"
-  
-  //val model: Model = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
-
-//  val trainSetName = "debug"
-//  val validationSetName = "dev"
 
   val wordDimSet = 5 to 13 by 1
   val vectorRegStrengthSet = (-15 to 1 by 1).map(a => Math.pow(10,a)) // in case Nan - higher regularizer

@@ -300,17 +300,14 @@ case class MatrixParam(dim1: Int, dim2: Int, clip: Double = 10.0) extends ParamB
   * @param arg2 the right block evaluation to a vector
   */
 case class Mul(arg1: Block[Matrix], arg2: Block[Vector]) extends Block[Vector] {
-  def forward(): Vector = {
-    val a1 = arg1.forward()
-    val a2 = arg2.forward()
-    output = a1 * a2
-    output
-  }
+  def forward(): Vector = arg1.forward() * arg2.forward()
 
   def backward(gradient: Vector): Unit = {
-    arg1.backward(outer(gradient, arg2.output))
+    arg1.backward(outer(gradient, arg2.output)) // (original) gradient *  arg2'
+//    arg1.backward(outer(arg2.output, gradient)) // arg2 * gradient'
 //    println("back pass debug " + arg1.output.activeSize + " " + gradient.activeSize)
-    arg2.backward((arg1.output * gradient))
+//    arg2.backward((arg1.output * gradient)) (original)
+    arg2.backward(arg1.output.t * gradient) // arg1' * gradient
   }
 
   def update(learningRate: Double): Unit = {

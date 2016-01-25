@@ -12,7 +12,7 @@ object SentimentAnalysisCorpus {
   val random = new Random(0L)
   def tokenize(sentence: String): Seq[String] = {
     sentence.split(" ")
-//    for better tokenizer:
+//    for better tokenizer: (gives us 225 998 words vs old 275 826)
 //    SentenceSplitter(TokenSplitter(sentence)).tokenWords
   }
 

@@ -96,12 +96,8 @@ class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double =
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
 
+  def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :_*)
 
-  def regularizer(words: Seq[Block[Vector]]): Loss = {
-    L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :_*)
-  }
-//  words :+ vectorParams("param_w") :_*
-//    L2Regularization(regularizationStrength, wordVectorsToSentenceVector(words))
 }
 
 /**
@@ -127,7 +123,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   matrixParams += "param_Wx" -> MatrixParam(hiddenSize, embeddingSize)
   matrixParams += "param_Wh" -> MatrixParam(hiddenSize, hiddenSize)
 
-  // parameter initialization
+  // Initialize parameters
   vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
@@ -145,9 +141,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   }
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = {
-    val sentenceScore = Sigmoid(Dot(sentence, vectorParams("param_w")))
-//    println(sentenceScore.forward())
-    sentenceScore
+      Sigmoid(Dot(sentence, vectorParams("param_w")))
   }
 
   def regularizer(words: Seq[Block[Vector]]): Loss =

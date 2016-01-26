@@ -131,4 +131,16 @@ object GradientChecker extends App {
     val rnnLoss = new LossSum(NegativeLogLikelihoodLoss(rnnScore, 1.0), rnnModel.regularizer(Seq(a,b)))
     println("\nGradient Checking RNN model: ")
     GradientChecker(rnnLoss, b)
+
+    // elementMul Block
+    val simpleElementMulBlock = Dot(ElementMul(a,a),b)
+    print("elementMul wrt b: ")
+    GradientChecker(simpleElementMulBlock, b)
+
+    // vectorSigmoid Block
+    val simpleVectorSigmoidBlock = Dot(VectorSigmoid(a), b)
+    println("Vector" + VectorSigmoid(a).forward())
+    print("vectorSigmoid wrt b: ")
+    GradientChecker(simpleVectorSigmoidBlock, b)
+
 }

@@ -22,10 +22,11 @@ object Main extends App {
 
 //    Using for RNN (single run)
   val learningRate = 0.01 // tried 0.01, 0.1, 1.0, 10.0, 1.0,
-  val vectorRegularizationStrength = 0.01 // tried 0.01, 0.1, 0.01, _, _, 5.0
-  val matrixRegularizationStrength = 0.0 // tried 0.01, 0.1, 0.01, _, _, 5.0
-  val wordDim = 10 // tried 10, 5
-  val hiddenDim = 10 // tried 10, 5
+  val vectorRegularizationStrength = 0.001 // tried 0.01, 0.1, 0.01, _, _, 5.0
+  val matrixRegularizationStrength = 0.001 // tried 0.01, 0.1, 0.01, _, _, 5.0, 0.01
+  val wordDim = 6 // tried 10, 5
+  val hiddenDim = 6 // tried 10, 5
+
 
   val trainSetName = "train"
   val validationSetName = "dev"
@@ -51,6 +52,7 @@ object Main extends App {
 
 // q. 4.3.6) prints vectorparams to file to visualize them later
 //    writeVectorsFromBestModelToFile(10, 0.01, 0.01, 100, 500)
+
 
 
 // run norm SGDL with RNN model for debug
@@ -87,7 +89,7 @@ object Main extends App {
       StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate)
 
       println("wordDim %d\tvectorRegStrength %4.10f\tlearningRate %4.10f\t".format(wordDim, vectorRegStrength, learningRate))
-      if (hasExplodingGradient(gridSearchModel)) {
+      if (false && hasExplodingGradient(gridSearchModel)) {
         loop.break() // don't increase learning rate, as we already have exploding gradients
         println("learningRateLoop exploded gradients")
       } else {

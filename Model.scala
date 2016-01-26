@@ -1,5 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
+import breeze.numerics.sigmoid
+
 import scala.collection.mutable
 import breeze.linalg._
 
@@ -149,5 +151,86 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
     new LossSum(
         L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0") :+ vectorParams("param_b"):_*),
         L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_Wh") :+ matrixParams("param_Wx"):_*)
+    )
+}
+//vectorParams += "param_w" -> VectorParam(hiddenSize) // supposed to be embeddingSize, currently hiddenSize
+//vectorParams += "param_h0" -> VectorParam(hiddenSize)
+//vectorParams += "param_b" -> VectorParam(hiddenSize)
+/**
+  * Problem 4
+  * A LSTM model
+  * Input gate parameters:
+  *
+  * @param
+  * @param embeddingSize dimension of the word vectors used in this model
+  * @param hiddenSize dimension of the hidden state vector used in this model
+  * @param vectorRegularizationStrength strength of the regularization on the word vectors and global parameter vector w
+  * @param matrixRegularizationStrength strength of the regularization of the transition matrices used in this model
+  */
+class LSTMModel(embeddingSize: Int, hiddenSize: Int,
+                                  vectorRegularizationStrength: Double = 0.0,
+                                  matrixRegularizationStrength: Double = 0.0) extends Model {
+  override val vectorParams: mutable.HashMap[String, VectorParam] =
+    LookupTable.trainableWordVectors
+//  vectorParams += "param_w" -> VectorParam(hiddenSize) // supposed to be embeddingSize, currently hiddenSize
+//  vectorParams += "param_h0" -> VectorParam(hiddenSize)
+//  vectorParams += "param_b" -> VectorParam(hiddenSize)
+  vectorParams += "param_w" -> VectorParam(hiddenSize)
+  vectorParams += "param_h0" -> VectorParam(hiddenSize)
+  vectorParams += "param_c0" -> VectorParam(hiddenSize)
+  vectorParams += "param_b" -> VectorParam(hiddenSize)
+
+  override val matrixParams: mutable.HashMap[String, MatrixParam] =
+    new mutable.HashMap[String, MatrixParam]()
+  matrixParams += "param_W_i" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_i" -> MatrixParam(hiddenSize, hiddenSize)
+  matrixParams += "param_W_f" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_f" -> MatrixParam(hiddenSize, hiddenSize)
+  matrixParams += "param_W_o" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_o" -> MatrixParam(hiddenSize, hiddenSize)
+  matrixParams += "param_W_g" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_g" -> MatrixParam(hiddenSize, hiddenSize)
+//  matrixParams += "param_Wx" -> MatrixParam(???, ???)
+//  matrixParams += "param_Wh" -> MatrixParam(???, ???)
+
+  def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
+
+  def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
+    val h_0:Block[Vector] = vectorParams("param_h0")
+    var c_0:Block[Vector] = vectorParams("param_c0")
+//    c_prev.set(DenseVector.zeros(hiddenSize))
+//    println("c_prev" + c_prev.forward() )
+//    println("word size" + words.size)
+    val h_n = words.foldLeft(h_0)((h_prev, x_t) => {
+      val i = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_i"), x_t), Mul(matrixParams("param_H_i"), h_prev))))
+      val f = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_f"), x_t), Mul(matrixParams("param_H_f"), h_prev))))
+      val o = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_o"), x_t), Mul(matrixParams("param_H_o"), h_prev))))
+      val g = Tanh(Sum(Seq(Mul(matrixParams("param_W_g"), x_t), Mul(matrixParams("param_H_g"), h_prev))))
+
+      val c_t = Sum(Seq(ElementMul(c_0, f), ElementMul(g, i)))
+
+//      println ("c heree " + c + "")
+
+      val h_t = ElementMul(Tanh(c_t), o).forward()
+//      println("c cache" + c_curr.output)
+      c_0 = c_t.forward()
+//      println("c_prev" + c_curr.forward())
+//      println("h_prev" + h_prev)
+      h_t
+    })
+//    println("h_n" + h_n)
+    vectorParams("param_h0").set(h_n.forward())
+    h_n
+  }
+
+  def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
+
+  def regularizer(words: Seq[Block[Vector]]): Loss =
+    new LossSum(
+      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0"):_*),
+      L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_W_i") :+ matrixParams("param_H_i")
+                                                           :+ matrixParams("param_W_f") :+ matrixParams("param_H_f")
+                                                           :+ matrixParams("param_W_o") :+ matrixParams("param_H_o")
+                                                           :+ matrixParams("param_W_g") :+ matrixParams("param_H_g"):_*)
     )
 }

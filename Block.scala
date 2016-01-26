@@ -173,6 +173,7 @@ case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
 case class Dot(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Double] {
   def forward(): Double = {
     output = arg1.forward() dot arg2.forward()
+//    println("dot output" + output)
     output
   }
 
@@ -301,12 +302,10 @@ case class MatrixParam(dim1: Int, dim2: Int, clip: Double = 10.0) extends ParamB
   */
 case class Mul(arg1: Block[Matrix], arg2: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = arg1.forward() * arg2.forward()
-
   def backward(gradient: Vector): Unit = {
     arg1.backward(outer(gradient, arg2.forward())) // (original) gradient *  arg2'
     arg2.backward(arg1.forward().t * gradient) // arg1' * gradient
   }
-
   def update(learningRate: Double): Unit = {
     arg1.update(learningRate)
     arg2.update(learningRate)
@@ -350,5 +349,48 @@ case class Dropout(prob: Double, arg: Block[Vector]) extends Block[Vector] {
 }
 
 /**
-  * ... be free, be creative :)
+  * A block representing the sigmoid of a vector value
+  * @param arg a vector that evaluates to a vector
   */
+case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
+  def forward(): Vector = {
+    output = sigmoid(arg.forward())
+//    println("sig output" + output)
+    output
+  }
+  def backward(gradient: Vector): Unit = {
+//    val x = arg.output
+//    val localGradient = sigmoid(x) * (1 - sigmoid(x))
+//    arg.backward(localGradient * gradient)
+//    pass debug
+//    arg.backward(gradient)
+      val in = arg.output
+      val local = {
+       in.map(x => sigmoid(x) * (1 - sigmoid(x)))
+      }
+      arg.backward(gradient :* local)
+  }
+  def update(learningRate: Double): Unit = arg.update(learningRate)
+}
+
+/**
+  * A block representing element wise multiplication
+  * @param arg1 the left block evaluating to a matrix
+  * @param arg2 the right block evaluation to a vector
+  */
+case class ElementMul(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
+  def forward(): Vector = {
+    val output = arg1.forward() :* arg2.forward()
+    output
+  }
+
+  def backward(gradient: Vector): Unit = {
+    arg1.backward(gradient :* arg2.forward())
+    arg2.backward(gradient :* arg1.forward())
+  }
+
+  def update(learningRate: Double): Unit = {
+    arg1.update(learningRate)
+    arg2.update(learningRate)
+  }
+}

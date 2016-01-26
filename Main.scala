@@ -1,7 +1,6 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import java.io.{File, PrintWriter}
-
 import scala.collection.mutable
 import scala.util.Random
 import scala.util.control.Breaks
@@ -26,7 +25,7 @@ object Main extends App {
   val vectorRegularizationStrength = 0.01 // tried 0.01, 0.1, 0.01, _, _, 5.0
   val matrixRegularizationStrength = 0.0 // tried 0.01, 0.1, 0.01, _, _, 5.0
   val wordDim = 10 // tried 10, 5
-  val hiddenDim = 5 // tried 10, 5
+  val hiddenDim = 10 // tried 10, 5
 
   val trainSetName = "train"
   val validationSetName = "dev"
@@ -42,7 +41,7 @@ object Main extends App {
 //  StochasticGradientDescentLearner(bestModel, trainSetName, 10, 0.000001, epochHook)
 
 // q. 4.3.4)
-    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
+//    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
   //  ToDo we can visualize parameter space i.e. 3d graph of params and validation set
 
 // q. 4.3.5)
@@ -55,8 +54,8 @@ object Main extends App {
 
   // run norm SGDL with RNN model for debug
 // q. 4.4.2)
-//  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
-//  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate, epochHook)
+  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
+  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate, epochHook)
 
 
 
@@ -161,6 +160,61 @@ object Main extends App {
 //  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
 //  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, epochHook)
 
+
+  /**
+    * Define parameter ranges for RNN grid search
+    */
+  val wordDimRange = 6 to 10 by 2
+//  val hiddenDimRange = 6 to 12 by 2
+  val vectorRegStrengthRange = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a)) // in case Nan - higher regularizer
+  val matrixRegStrengthRange = (-4.0 to -1.0 by 1.0).map(a => Math.pow(10,a)) // in case Nan - higher regularizer
+  // in case Nan - lower learning rate (hence we can stop iterating after reaching Nan in this loop)
+  val learningRateRange = (-3.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
+
+//  runGridSearchRNN(wordDimRange, wordDimRange, vectorRegStrengthRange, vectorRegStrengthRange, learningRateRange, 100)
+
+  def runGridSearchRNN(wordDimRange:Range, hiddenDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],  learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
+    val historyWriter = new PrintWriter(new File("./data/assignment3/param_history_rnn.txt"))
+    val gridSearchParams = mutable.MutableList[(Int, Int, Double, Double, Double, Double, Double)]()
+    val loop = new Breaks
+
+    for (wordDim <- wordDimRange; vectorRegStrength <- vectorRegStrengthSet) {
+      loop.breakable {
+        for (learningRate <- learningRateSet) {
+//          println(LookupTable.trainableWordVectors.size)
+          LookupTable.trainableWordVectors.clear()
+//          println(LookupTable.trainableWordVectors.size)
+          runSGDwithParamRNN(wordDim, wordDim, vectorRegStrength, vectorRegStrength, learningRate, epochs)
+        }
+      }
+    }
+    historyWriter.close()
+    if (gridSearchParams.isEmpty) {
+      println("No best grid search parameters at that range!")
+    } else {
+      val bestDevAcc = gridSearchParams.maxBy(param => param._7)
+      println("bestDevAcc=" + bestDevAcc)
+    }
+
+
+    def runSGDwithParamRNN(wordDim:Int, hiddenDim:Int, vectorRegStrength:Double, matrixRegStrength:Double, learningRate:Double, epochs:Int):Unit = {
+      val gridSearchModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegStrength, matrixRegStrength)
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, epochHook)
+
+      println("wordDim = hiddenDim %d\tvectorRegStrength %4.10f\t vectorRegStrength %4.10f\t learningRate %4.10f\t".format(wordDim, vectorRegStrength, vectorRegStrength, learningRate))
+      if (hasExplodingGradient(gridSearchModel)) {
+        loop.break() // don't increase learning rate, as we already have exploding gradients
+        println("learningRateLoop exploded gradients")
+      } else {
+          val ratioOnTrainSet = 100 * Evaluator(gridSearchModel, trainSetName)
+          val ratioOnValidSet = 100 * Evaluator(gridSearchModel, validationSetName)
+          gridSearchParams.+=((wordDim, hiddenDim, vectorRegStrength, matrixRegStrength, learningRate, ratioOnTrainSet, ratioOnValidSet))
+          println("ratioOnTrainSet %4.2f\tratioOnValidSet %4.2f\t".format(ratioOnTrainSet, ratioOnValidSet))
+          historyWriter.write(wordDim + " " + hiddenDim + " " + vectorRegStrength + " " + matrixRegStrength + " " + learningRate + " " + ratioOnValidSet + "\n")
+      }
+      println()
+    }
+  }
 
   /**
    * Comment this in if you want to look at trained parameters

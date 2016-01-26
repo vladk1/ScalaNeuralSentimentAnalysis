@@ -134,9 +134,10 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
       val Wh_h_prev = Mul(matrixParams("param_Wh"), h_prev)
       val Wx_x_t = Mul(matrixParams("param_Wx"), wordVector)
       val b = vectorParams("param_b")
-      val new_h = Tanh(Sum(Seq(Wh_h_prev, Wx_x_t, b)))
+      val new_h = Tanh(Sum(Seq(Wh_h_prev, Wx_x_t, b))).forward()
       new_h
     })
+//    println(hn)
     hn
   }
 

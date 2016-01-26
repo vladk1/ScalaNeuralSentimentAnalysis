@@ -27,8 +27,8 @@ object StochasticGradientDescentLearner extends App {
         epochHook(i, accLoss, model)
         val modelValidationAcc = 100 * Evaluator(model, Main.validationSetName)
         // early stopping
-        if (modelValidationAcc < previousDevAcc) epoch_loop.break()
-        else previousDevAcc = modelValidationAcc
+//        if (modelValidationAcc < previousDevAcc) epoch_loop.break()
+//        else previousDevAcc = modelValidationAcc
       }
     }
   }

@@ -71,75 +71,76 @@ object GradientChecker extends App {
     * A very silly block to test if gradient checking is working.
     * Will only work if the implementation of the Dot block is already correct
     */
-//  Question 2
 
-//    initialise vectors a and b
-  val a = vec(-1.5, 1.0, 1.5, 0.5)
-  val b = VectorParam(4)
-  b.set(vec(1.0, 2.0, -0.5, 2.5))
+    // GRADIENT CHECKING - INITIALIZATION
+    val a = vec(-1.5, 1.0, 1.5, 0.5)
+    val c = vec(1.0, 2.0, 5.0, 2.5)
+    val b = VectorParam(4); b.set(vec(1.0, 2.0, -0.5, 2.5))
+    val matrix = MatrixParam(4,4)
 
-//  dot block gradient check
-  val simpleDotBlock = Dot(a, b)
-  print("SimpleDotBlock wrt b")
-  GradientChecker(simpleDotBlock, b)
+    // DOT BLOCK
+    val simpleDotBlock = Dot(a, b)
+    println("\nGradient checking DOT block wrt vectorParam: ")
+    GradientChecker(simpleDotBlock, b)
 
-//  sum block
-  val sumBlock = Sum(Seq(a, b))
-  print("SumBlock wrt b")
-  GradientChecker(Dot(sumBlock, sumBlock), b)
+    //  SUM BLOCK
+    val sumBlock = Sum(Seq(a, b))
+    println("\nGradient checking SUM block wrt vectorParam: ")
+    GradientChecker(Dot(sumBlock, b), b)
 
+    // SIGMOID BLOCK
+    val sigmoidBlock = Sigmoid(Dot(a, b))
+    println("\nGradient checking SIGMOID block wrt vectorParam: ")
+    GradientChecker(sigmoidBlock, b)
 
-// sigmoid block
-  val sigmoidBlock = Sigmoid(Dot(a, b))
-  print("SigmoidBlock wrt b")
-  GradientChecker(sigmoidBlock, b)
+    //  NLL BLOCK
+    val negativeLogLikelihoodLossBlock = NegativeLogLikelihoodLoss(Sigmoid(Dot(a, b)), 0.5)
+    println("\nGradient checking NEGATIVE LOG LIKELIHOOD block wrt vectorParam: ")
+    GradientChecker(negativeLogLikelihoodLossBlock, b)
 
-//  NLL block
-  val negativeLogLikelihoodLossBlock = NegativeLogLikelihoodLoss(Sigmoid(Dot(a, b)), 0.5)
-  print("NegativeLogLikelihoodLossBlock wrt b")
-  GradientChecker(negativeLogLikelihoodLossBlock, b)
+    // MUL BLOCK
+    val mulBlock = Mul(matrix, c)
+    println("\nGradient checking MUL block wrt vectorParam: ")
+    GradientChecker(Dot(mulBlock, b), b)
+//    GradientChecker(Dot(mulBlock,mulBlock), matrix)
 
-// Sum of Words block
-  val sumOfWordsModel = new SumOfWordVectorsModel(4, 0.1)
-  print("SumOfWordsModel wrt b")
-  val score = sumOfWordsModel.scoreSentence(a)
-  val loss = new LossSum(NegativeLogLikelihoodLoss(score, 1.0), sumOfWordsModel.regularizer(Seq(a,b)))
-  GradientChecker(loss, b)
+    // TANH BLOCK
+    val tanBlock = Tanh(b)
+    println("\nGradient Checking TANH block wrt vectorParam: ")
+    GradientChecker(Dot(tanBlock, tanBlock), b)
 
-//  Question 3
+    // L2 REGULARIZATION BLOCK
+    val l2RegularizationBlock = L2Regularization(0.1, b)
+    val l2RegularizationBlockMatr = L2Regularization(0.001, matrix)
+    println("\nGradient Checking L2 REGULARIZATION block wrt vectorParam: ")
+    GradientChecker(l2RegularizationBlock, b)
+    println("\nGradient Checking L2 REGULARIZATION block wrt matrixParam: ")
+    GradientChecker(l2RegularizationBlockMatr, matrix)
 
-//  initialise matrix
-  val matrix = MatrixParam(4,4)
-//  matrix.set(mat(2,2)(-1.5, 1.0, -2.0, 2.2))
+    // SUM OF WORDS MODEL
+    val sumOfWordsModel = new SumOfWordVectorsModel(4, 0.1)
+    val score = sumOfWordsModel.scoreSentence(a)
+    val loss = new LossSum(NegativeLogLikelihoodLoss(score, 1.0), sumOfWordsModel.regularizer(Seq(a,b)))
+    println("\nGradient Checking SUM OF WORDS model: ")
+    GradientChecker(loss, b)
 
-// mul block
-//  val mulBlock = Dot(Mul(matrix, a), b)
-//  println(mulBlock.forward())
-  println("mul block wrt b")
-  GradientChecker(Dot(Mul(matrix, a), b), b)
+    // RNN MODEL
+    val rnnModel = new RecurrentNeuralNetworkModel(4, 4, 0.000001, 0.00001)
+    val rnnSentence = rnnModel.wordVectorsToSentenceVector(Seq(a,b))
+    val rnnScore = rnnModel.scoreSentence(rnnSentence)
+    val rnnLoss = new LossSum(NegativeLogLikelihoodLoss(rnnScore, 1.0), rnnModel.regularizer(Seq(a,b)))
+    println("\nGradient Checking RNN model: ")
+    GradientChecker(rnnLoss, b)
 
-//  tanh block
-  val simpleTanBlock = Tanh(b)
-  println("dot(tan) wrt b: ")
-  GradientChecker(Dot(simpleTanBlock, simpleTanBlock), b)
+    // elementMul Block
+    val simpleElementMulBlock = Dot(ElementMul(a,a),b)
+    print("elementMul wrt b: ")
+    GradientChecker(simpleElementMulBlock, b)
 
-
-// rnn block
-  val rnnModel = new RecurrentNeuralNetworkModel(4, 4, 0.01, 0.0001)
-  val rnnSentence = rnnModel.wordVectorsToSentenceVector(Seq(a,b))
-  val rnnScore = rnnModel.scoreSentence(rnnSentence)
-  val rnnLoss = new LossSum(NegativeLogLikelihoodLoss(rnnScore, 1.0), rnnModel.regularizer(Seq(a,b)))
-  print("rnnModel wrt b: ")
-  GradientChecker(rnnLoss, b)
-
-// elementMul Block
-  val simpleElementMulBlock = Dot(ElementMul(a,a),b)
-  print("elementMul wrt b: ")
-  GradientChecker(simpleElementMulBlock, b)
-
-// vectorSigmoid Block
-  val simpleVectorSigmoidBlock = Dot(VectorSigmoid(a), b)
-  print("vectorSigmoid wrt b: ")
-  GradientChecker(simpleVectorSigmoidBlock, b)
+    // vectorSigmoid Block
+    val simpleVectorSigmoidBlock = Dot(VectorSigmoid(a), b)
+    println("Vector" + VectorSigmoid(a).forward())
+    print("vectorSigmoid wrt b: ")
+    GradientChecker(simpleVectorSigmoidBlock, b)
 
 }

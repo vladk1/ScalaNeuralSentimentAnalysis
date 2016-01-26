@@ -136,7 +136,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
       val Wh_h_prev = Mul(matrixParams("param_Wh"), h_prev)
       val Wx_x_t = Mul(matrixParams("param_Wx"), wordVector)
       val b = vectorParams("param_b")
-      val new_h = Tanh(Sum(Seq(Wh_h_prev, Wx_x_t, b)))
+      val new_h = Tanh(Sum(Seq(Wh_h_prev, Wx_x_t, b))).forward()
       new_h
     })
     hn
@@ -181,14 +181,14 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 
   override val matrixParams: mutable.HashMap[String, MatrixParam] =
     new mutable.HashMap[String, MatrixParam]()
-  matrixParams += "param_U_i" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_W_i" -> MatrixParam(hiddenSize, hiddenSize)
-  matrixParams += "param_U_f" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_W_f" -> MatrixParam(hiddenSize, hiddenSize)
-  matrixParams += "param_U_o" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_W_o" -> MatrixParam(hiddenSize, hiddenSize)
-  matrixParams += "param_U_g" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_W_g" -> MatrixParam(hiddenSize, hiddenSize)
+  matrixParams += "param_W_i" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_i" -> MatrixParam(hiddenSize, hiddenSize)
+  matrixParams += "param_W_f" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_f" -> MatrixParam(hiddenSize, hiddenSize)
+  matrixParams += "param_W_o" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_o" -> MatrixParam(hiddenSize, hiddenSize)
+  matrixParams += "param_W_g" -> MatrixParam(hiddenSize, embeddingSize)
+  matrixParams += "param_H_g" -> MatrixParam(hiddenSize, hiddenSize)
 //  matrixParams += "param_Wx" -> MatrixParam(???, ???)
 //  matrixParams += "param_Wh" -> MatrixParam(???, ???)
 
@@ -199,27 +199,26 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
     var c_0:Block[Vector] = vectorParams("param_c0")
 //    c_prev.set(DenseVector.zeros(hiddenSize))
 //    println("c_prev" + c_prev.forward() )
-    println("word size" + words.size)
-    val h_n = words.foldLeft(h_0)((h_prev, xt) => {
-      val i = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_U_i"), xt), Mul(matrixParams("param_W_i"), h_prev))))
-      val f = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_U_f"), xt), Mul(matrixParams("param_W_f"), h_prev))))
-      val o = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_U_o"), xt), Mul(matrixParams("param_W_o"), h_prev))))
-      val g = Tanh(Sum(Seq(Mul(matrixParams("param_U_g"), xt), Mul(matrixParams("param_W_g"), h_prev))))
+//    println("word size" + words.size)
+    val h_n = words.foldLeft(h_0)((h_prev, x_t) => {
+      val i = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_i"), x_t), Mul(matrixParams("param_H_i"), h_prev))))
+      val f = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_f"), x_t), Mul(matrixParams("param_H_f"), h_prev))))
+      val o = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_o"), x_t), Mul(matrixParams("param_H_o"), h_prev))))
+      val g = Tanh(Sum(Seq(Mul(matrixParams("param_W_g"), x_t), Mul(matrixParams("param_H_g"), h_prev))))
 
-      val c_curr = Sum(Seq(ElementMul(c_0, f), ElementMul(g, i)))
+      val c_t = Sum(Seq(ElementMul(c_0, f), ElementMul(g, i)))
 
-//      println("i" + i.forward())
+//      println ("c heree " + c + "")
 
-
-      val h_t = ElementMul(Tanh(c_curr), o)
+      val h_t = ElementMul(Tanh(c_t), o).forward()
 //      println("c cache" + c_curr.output)
-      vectorParams("param_c0").set(c_curr.forward())
+      c_0 = c_t.forward()
 //      println("c_prev" + c_curr.forward())
-      println("h_t" + h_t.forward())
+//      println("h_prev" + h_prev)
       h_t
     })
-    println("h_n" + h_n)
-    vectorParams("param_c0").set(h_n.forward())
+//    println("h_n" + h_n)
+    vectorParams("param_h0").set(h_n.forward())
     h_n
   }
 
@@ -227,10 +226,10 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 
   def regularizer(words: Seq[Block[Vector]]): Loss =
     new LossSum(
-//      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0"):_*),
-//      L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_U_i") :+ matrixParams("param_W_i")
-////                                                           :+ matrixParams("param_U_f") :+ matrixParams("param_W_f")
-////                                                           :+ matrixParams("param_U_o") :+ matrixParams("param_W_o")
-//                                                           :+ matrixParams("param_U_g") :+ matrixParams("param_W_g"):_*)
+      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0"):_*),
+      L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_W_i") :+ matrixParams("param_H_i")
+                                                           :+ matrixParams("param_W_f") :+ matrixParams("param_H_f")
+                                                           :+ matrixParams("param_W_o") :+ matrixParams("param_H_o")
+                                                           :+ matrixParams("param_W_g") :+ matrixParams("param_H_g"):_*)
     )
 }

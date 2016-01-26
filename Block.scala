@@ -303,8 +303,8 @@ case class MatrixParam(dim1: Int, dim2: Int, clip: Double = 10.0) extends ParamB
 case class Mul(arg1: Block[Matrix], arg2: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = arg1.forward() * arg2.forward()
   def backward(gradient: Vector): Unit = {
-    arg1.backward(outer(gradient, arg2.output))
-    arg2.backward(arg1.output.t * gradient)
+    arg1.backward(outer(gradient, arg2.forward())) // (original) gradient *  arg2'
+    arg2.backward(arg1.forward().t * gradient) // arg1' * gradient
   }
   def update(learningRate: Double): Unit = {
     arg1.update(learningRate)
@@ -366,7 +366,7 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
 //    arg.backward(gradient)
       val in = arg.output
       val local = {
-       in.map(x => 1 - sigmoid(x))
+       in.map(x => sigmoid(x) * (1 - sigmoid(x)))
       }
       arg.backward(gradient :* local)
   }
@@ -380,16 +380,13 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
   */
 case class ElementMul(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = {
-    println("element Mul")
-
     val output = arg1.forward() :* arg2.forward()
-    println(output)
     output
   }
 
   def backward(gradient: Vector): Unit = {
-    arg1.backward(gradient :* arg2.output)
-    arg2.backward(gradient :* arg1.output)
+    arg1.backward(gradient :* arg2.forward())
+    arg2.backward(gradient :* arg1.forward())
   }
 
   def update(learningRate: Double): Unit = {

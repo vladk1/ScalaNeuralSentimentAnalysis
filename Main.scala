@@ -31,15 +31,17 @@ object Main extends App {
   val trainSetName = "train"
   val validationSetName = "dev"
 
-  val wordDimSet = 6 to 10 by 1
+  val wordDimSet = 10 to 11 by 1
   val vectorRegStrengthSet = (-6.0 to 0.0 by 1.0).map(a => Math.pow(10,a)) // in case Nan - higher regularizer
   // in case Nan - lower learning rate (hence we can stop iterating after reaching Nan in this loop)
   val learningRateSet = (-6.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
 
 
   //11) 75.37 (7,1.0E-5,0.1)1 iter => deeper
-//  val bestModel = new SumOfWordVectorsModel(7, Math.pow(10,-6))
-//  StochasticGradientDescentLearner(bestModel, trainSetName, 10, 0.000001, epochHook)
+//  10,  0.1,  0.0031622776601683794
+//  10, 0.01, 0.01, 83.65680110666567, 76.36484687083887
+  val testModel = new SumOfWordVectorsModel(10, 0.01)
+  StochasticGradientDescentLearner(testModel, trainSetName, 100, 0.01)
 
 // q. 4.3.4)
 //    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
@@ -49,28 +51,14 @@ object Main extends App {
   //  iterateThroughEpochs(wordDim:Int, vectorRegularizationStrength:Double, learningRate:Double)
 
 // q. 4.3.6) prints vectorparams to file to visualize them later
-//    writeVectorsFromBestModelToFile(7, Math.pow(10,-5), 0.1, 1, 5000)
+//    writeVectorsFromBestModelToFile(10, 0.01, 0.01, 100, 500)
 
 
 
-  // run norm SGDL with RNN model for debug
-//  val SGDLmodel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
-  val SGDLmodel = new LSTMModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
-//  val SGDLmodel = new SumOfWordVectorsModel(wordDim, vectorRegularizationStrength)
-  StochasticGradientDescentLearner(SGDLmodel, trainSetName, 100, learningRate, epochHook)
-
-//    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 1)
-//  ToDo we can visualize parameter space i.e. 3d graph of params and validation set
+// run norm SGDL with RNN model for debug
 // q. 4.4.2)
-  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
-  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate, epochHook)
-
-
-
-  def epochHook(iter: Int, accLoss: Double, model: Model): Unit = {
-    println("Epoch %4d\tLoss %8.2f\tTrain_Acc %4.2f\tDev_Acc %4.2f".format(
-      iter, accLoss, 100 * Evaluator(model, trainSetName), 100 * Evaluator(model, validationSetName)))
-  }
+//  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
+//  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate)
 
 
   def runGridSearch(wordDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
@@ -98,20 +86,20 @@ object Main extends App {
 
     def runSGDwithParam(wordDim:Int, vectorRegStrength:Double, learningRate:Double, epochs:Int):Unit = {
       val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegStrength)
-      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, epochHook)
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate)
 
       println("wordDim %d\tvectorRegStrength %4.10f\tlearningRate %4.10f\t".format(wordDim, vectorRegStrength, learningRate))
       if (false && hasExplodingGradient(gridSearchModel)) {
         loop.break() // don't increase learning rate, as we already have exploding gradients
         println("learningRateLoop exploded gradients")
       } else {
-        val ratioOnTrainSet = 100 * Evaluator(gridSearchModel, trainSetName)
-        val ratioOnValidSet = 100 * Evaluator(gridSearchModel, validationSetName)
+        val ratioOnTrainSet = Evaluator(gridSearchModel, trainSetName)._1
+        val ratioOnValidSet = Evaluator(gridSearchModel, validationSetName)._1
         gridSearchParams.+=((wordDim, vectorRegStrength, learningRate, ratioOnTrainSet, ratioOnValidSet))
         println("ratioOnTrainSet %4.2f\tratioOnValidSet %4.2f\t".format(ratioOnTrainSet, ratioOnValidSet))
         historyWriter.write(wordDim + " " + vectorRegStrength + " " + learningRate + " " + ratioOnValidSet+"\n")
       }
-      println()
+      println("\n")
     }
 }
 
@@ -123,10 +111,11 @@ object Main extends App {
 
   def writeVectorsFromBestModelToFile(bestWordDim:Int, bestVectorRegularizationStrength:Double, bestLearningRate:Double, epochs:Int, maxWords:Int): Unit = {
     val bestModel = new SumOfWordVectorsModel(bestWordDim, bestVectorRegularizationStrength)
-    StochasticGradientDescentLearner(bestModel, trainSetName, epochs, bestLearningRate, epochHook)
+    StochasticGradientDescentLearner(bestModel, trainSetName, epochs, bestLearningRate)
     println("Create word vector files.")
-    val wordWriter = new PrintWriter(new File("./data/assignment3/word_param.txt" ))
-    val paramWriter = new PrintWriter(new File("./data/assignment3/vector_params.txt" ))
+    val actualWordWriter = new PrintWriter(new File("./data/assignment3/actual_word_param100.txt" ))
+    val wordWriter = new PrintWriter(new File("./data/assignment3/word_param100.txt" ))
+    val paramWriter = new PrintWriter(new File("./data/assignment3/vector_params100.txt" ))
     var count = 0
 
     val params: Array[(String,VectorParam)] = bestModel.vectorParams.toArray
@@ -138,6 +127,7 @@ object Main extends App {
       val paramBlock = example._2
       println(s"$paramName:\n${paramBlock.param}\n")
       val predict = bestModel.predict(Seq(paramName))
+      actualWordWriter.write(paramName+ "\n")
       wordWriter.write(predict.compare(false) + "\n")
 
       val wordParam = paramBlock.param
@@ -149,13 +139,14 @@ object Main extends App {
     }
     wordWriter.close()
     paramWriter.close()
+    actualWordWriter.close()
     println("We have written "+count+" words")
   }
 
   def iterateThroughEpochs(wordDim:Int, vectorRegularizationStrength:Double, learningRate:Double): Unit = {
     for (epochs <- 1 to 50 by 1) {
       val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegularizationStrength)
-      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, epochHook)
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate)
     }
   }
 
@@ -165,7 +156,7 @@ object Main extends App {
 
 //  75.37 (7,1.0E-5,0.1)1 iter => deeper
 //  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
-//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, epochHook)
+//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01)
 
 
   /**

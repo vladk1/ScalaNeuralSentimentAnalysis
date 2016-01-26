@@ -7,9 +7,8 @@ import scala.util.control.Breaks
  */
 object StochasticGradientDescentLearner extends App {
 
-
-  def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double, epochHook: (Int, Double, Model) => Unit): Unit = {
-    var previousDevAcc = 0.0
+  def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double): Unit = {
+    var previousDevLoss = Double.MaxValue
     val epoch_loop = new Breaks
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
     epoch_loop.breakable {
@@ -19,17 +18,31 @@ object StochasticGradientDescentLearner extends App {
           if (j % 1000 == 0) print(s"Iter $j\r")
           val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
           val modelLoss = model.loss(sentence, target)
-//          println("modelLoss sim ="+model.vectorParams("param_w").dim)
           accLoss += modelLoss.forward()
           modelLoss.backward()
           modelLoss.update(learningRate) // updates parameters of the block
         }
-        epochHook(i, accLoss, model)
-        val modelValidationAcc = 100 * Evaluator(model, Main.validationSetName)
-        // early stopping
-//        if (modelValidationAcc < previousDevAcc) epoch_loop.break()
-//        else previousDevAcc = modelValidationAcc
+        if (i % 3 == 0) {
+          previousDevLoss = epochHook(i, accLoss, model, epoch_loop, previousDevLoss)
+        }
       }
     }
   }
+
+  def epochHook(iter: Int, accLoss: Double, model: Model, epoch_loop:Breaks, previousDevLoss:Double): Double = {
+    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // accuracy percentage, loss
+    val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
+    println("Epoch %4d\tLoss %8.2f\tTrain_Acc %4.2f\tDev_Acc %4.2f \n".format(
+      iter, accLoss, evaluatorOnTrainSet._1, evaluatorOnValidSet._1))
+
+    // early stopping if loss on valid. set not going down
+    if (evaluatorOnValidSet._2 > previousDevLoss) {
+      epoch_loop.break()
+      println("Break! " + evaluatorOnValidSet._2)
+    } else {
+      println(evaluatorOnValidSet._2)
+    }
+    evaluatorOnValidSet._2
+  }
+
 }

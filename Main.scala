@@ -57,9 +57,10 @@ object Main extends App {
     */
   // run norm SGDL with RNN model for debug
   val SGDLmodel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
+//  val SGDLmodel = new SumOfWordVectorsModel(wordDim, vectorRegularizationStrength)
   StochasticGradientDescentLearner(SGDLmodel, trainSetName, 100, learningRate, epochHook)
 
-    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 1)
+//    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 1)
 //  ToDo we can visualize parameter space i.e. 3d graph of params and validation set
 
 //  prints vectorparams to file

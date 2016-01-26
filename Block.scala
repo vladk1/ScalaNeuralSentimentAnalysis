@@ -303,11 +303,8 @@ case class Mul(arg1: Block[Matrix], arg2: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = arg1.forward() * arg2.forward()
 
   def backward(gradient: Vector): Unit = {
-    arg1.backward(outer(gradient, arg2.output)) // (original) gradient *  arg2'
-//    arg1.backward(outer(arg2.output, gradient)) // arg2 * gradient'
-//    println("back pass debug " + arg1.output.activeSize + " " + gradient.activeSize)
-//    arg2.backward((arg1.output * gradient)) (original)
-    arg2.backward(arg1.output.t * gradient) // arg1' * gradient
+    arg1.backward(outer(gradient, arg2.output))
+    arg2.backward(arg1.output.t * gradient)
   }
 
   def update(learningRate: Double): Unit = {

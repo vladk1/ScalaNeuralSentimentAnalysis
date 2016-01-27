@@ -3,6 +3,8 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 import breeze.linalg._
 import breeze.numerics.{tanh, log, pow, sigmoid}
 
+import scala.util.Random
+
 
 /**
   * @author rockt
@@ -173,7 +175,6 @@ case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
 case class Dot(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Double] {
   def forward(): Double = {
     output = arg1.forward() dot arg2.forward()
-//    println("dot output" + output)
     output
   }
 
@@ -343,9 +344,23 @@ case class Tanh(arg: Block[Vector]) extends Block[Vector] {
   * @param arg a block evaluating to a vector whose components we want to drop
   */
 case class Dropout(prob: Double, arg: Block[Vector]) extends Block[Vector] {
-  def forward(): Vector = ???
-  def update(learningRate: Double): Unit = ???
-  def backward(gradient: Vector): Unit = ???
+  val isDrop = {
+    val x = Random.nextInt(100)
+    x < 100*prob
+  }
+  def forward(): Vector = {
+    if (isDrop) {
+      arg.forward()
+    } else {
+      DenseVector.zeros[Double](arg.output.length)
+    }
+  }
+  def update(learningRate: Double): Unit = {
+    arg.update(learningRate)
+  }
+  def backward(gradient: Vector): Unit = {
+    arg.backward(gradient)
+  }
 }
 
 /**

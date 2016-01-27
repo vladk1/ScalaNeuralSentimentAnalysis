@@ -9,7 +9,9 @@ import scala.util.control.Breaks
  */
 object StochasticGradientDescentLearner extends App {
 
-  def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double, parentParams:String): Unit = {
+  var previousDevLoss = Double.MaxValue
+
+  def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double, isEarlyStop:Boolean, parentParams:String, logFileName:String): Unit = {
     val epoch_loop = new Breaks
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
     epoch_loop.breakable {
@@ -26,43 +28,40 @@ object StochasticGradientDescentLearner extends App {
           if (localLoss.isNaN) epoch_loop.break()
         }
 //        if (i > 20) {
-          epochHook(i, accLoss, model, epoch_loop, parentParams)
+          epochHook(i, model, epoch_loop, parentParams, logFileName, isEarlyStop)
 //        }
       }
     }
   }
 
-  var previousDevLoss = Double.MaxValue
-
-  def epochHook(iter: Int, accLoss: Double, model: Model, epoch_loop:Breaks, parentParams:String): Unit = {
-    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // accuracy percentage, loss
+  def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, logFileName:String, isEarlyStop:Boolean): Unit = {
+    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // (accuracy percentage, loss)
     val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
-    println("Epoch %4d\tLoss %8.2f\tTrain_Acc %4.2f\tDev_Acc %4.2f\t%4.2f\n".format(
-      iter, accLoss, evaluatorOnTrainSet._1, evaluatorOnValidSet._1, evaluatorOnValidSet._2))
+    println("Epoch %4d\tTrain_Loss %8.2f\tTrain_Acc %4.2f\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
+      iter, evaluatorOnTrainSet._2, evaluatorOnTrainSet._1, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
 
-    saveBestSetToFile(iter, evaluatorOnTrainSet, evaluatorOnValidSet, parentParams)
+    saveBestSetToFile(iter, evaluatorOnTrainSet, evaluatorOnValidSet, parentParams, logFileName)
 
     // early stopping if loss on valid. set not going down
-    if ((iter > 20) && evaluatorOnValidSet._2 > previousDevLoss) {
+    if ((iter > 20) && evaluatorOnValidSet._2 > previousDevLoss && isEarlyStop) {
       epoch_loop.break()
       println("Break! " + evaluatorOnValidSet._2)
     }
-
     previousDevLoss = evaluatorOnValidSet._2
   }
 
-  // write acc and loss to file (iter train_acc train_loss valid_acc valid_loss)
-  def saveBestSetToFile(iter: Int, evaluatorOnTrainSet: (Double, Double), evaluatorOnValidSet: (Double, Double), parentParams: String) = {
-    val historyWriter = new FileWriter("./data/assignment3/param_history_rnn2.txt",true)
-    historyWriter.write(parentParams+" "+iter + " ")
-    // (accTrain accValid lossTrain lossValid)
+  // write acc and loss to file in format: (iter train_acc train_loss valid_acc valid_loss)
+  def saveBestSetToFile(iter: Int, evaluatorOnTrainSet: (Double, Double), evaluatorOnValidSet: (Double, Double), parentParams:String, logFileName:String) = {
+    val historyWriter = new FileWriter("./data/assignment3/"+logFileName, true)
+    var outputToPrint = parentParams+" "+iter + " "
     for (evalTrain <- evaluatorOnTrainSet.productIterator.toList) {
-      historyWriter.write(evalTrain.toString + " ")
+      outputToPrint += (evalTrain.toString + " ")
     }
     for (evalValid <- evaluatorOnValidSet.productIterator.toList) {
-      historyWriter.write(evalValid.toString + " ")
+      outputToPrint += (evalValid.toString + " ")
     }
-    historyWriter.write("\n")
+    println(parentParams+"\n")
+    historyWriter.write(outputToPrint+"\n")
     historyWriter.close()
   }
 

@@ -51,16 +51,15 @@ object Main extends App {
   //  iterateThroughEpochs(wordDim:Int, vectorRegularizationStrength:Double, learningRate:Double)
 
 // q. 4.3.6) prints vectorparams to file to visualize them later
-//    writeVectorsFromBestModelToFile(10, 0.01, 0.01, 100, 500)
-
+//  val bestModel = new SumOfWordVectorsModel(10, 0.01)
+//  StochasticGradientDescentLearner(bestModel, trainSetName, 100, 0.01)
+//  SaveModel.writeWordVectorsFromModelToFile(bestModel, 500)
 
 
 // run norm SGDL with RNN model for debug
 // q. 4.4.2)
 //  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
 //  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate)
-
-
   def runGridSearch(wordDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
     val historyWriter = new PrintWriter(new File("./data/assignment3/param_history.txt" ))
     val gridSearchParams = mutable.MutableList[(Int, Double, Double, Double, Double)]()
@@ -109,40 +108,6 @@ object Main extends App {
     modelLoss.forward().isNaN
   }
 
-  def writeVectorsFromBestModelToFile(bestWordDim:Int, bestVectorRegularizationStrength:Double, bestLearningRate:Double, epochs:Int, maxWords:Int): Unit = {
-    val bestModel = new SumOfWordVectorsModel(bestWordDim, bestVectorRegularizationStrength)
-    StochasticGradientDescentLearner(bestModel, trainSetName, epochs, bestLearningRate)
-    println("Create word vector files.")
-    val actualWordWriter = new PrintWriter(new File("./data/assignment3/actual_word_param100.txt" ))
-    val wordWriter = new PrintWriter(new File("./data/assignment3/word_param100.txt" ))
-    val paramWriter = new PrintWriter(new File("./data/assignment3/vector_params100.txt" ))
-    var count = 0
-
-    val params: Array[(String,VectorParam)] = bestModel.vectorParams.toArray
-    val rnd = new Random()
-
-    while (count < maxWords) {
-      val example = params(rnd.nextInt(params.length))
-      val paramName = example._1
-      val paramBlock = example._2
-      println(s"$paramName:\n${paramBlock.param}\n")
-      val predict = bestModel.predict(Seq(paramName))
-      actualWordWriter.write(paramName+ "\n")
-      wordWriter.write(predict.compare(false) + "\n")
-
-      val wordParam = paramBlock.param
-      wordParam.foreach(param => {
-        paramWriter.write(param+" ")
-      })
-      paramWriter.write("\n")
-      count += 1
-    }
-    wordWriter.close()
-    paramWriter.close()
-    actualWordWriter.close()
-    println("We have written "+count+" words")
-  }
-
   def iterateThroughEpochs(wordDim:Int, vectorRegularizationStrength:Double, learningRate:Double): Unit = {
     for (epochs <- 1 to 50 by 1) {
       val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegularizationStrength)
@@ -179,9 +144,7 @@ object Main extends App {
     for (wordDim <- wordDimRange; vectorRegStrength <- vectorRegStrengthSet) {
       loop.breakable {
         for (learningRate <- learningRateSet) {
-//          println(LookupTable.trainableWordVectors.size)
           LookupTable.trainableWordVectors.clear()
-//          println(LookupTable.trainableWordVectors.size)
           runSGDwithParamRNN(wordDim, wordDim, vectorRegStrength, vectorRegStrength, learningRate, epochs)
         }
       }
@@ -197,15 +160,15 @@ object Main extends App {
 
     def runSGDwithParamRNN(wordDim:Int, hiddenDim:Int, vectorRegStrength:Double, matrixRegStrength:Double, learningRate:Double, epochs:Int):Unit = {
       val gridSearchModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegStrength, matrixRegStrength)
-      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, epochHook)
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate)
 
       println("wordDim = hiddenDim %d\tvectorRegStrength %4.10f\t vectorRegStrength %4.10f\t learningRate %4.10f\t".format(wordDim, vectorRegStrength, vectorRegStrength, learningRate))
       if (hasExplodingGradient(gridSearchModel)) {
         loop.break() // don't increase learning rate, as we already have exploding gradients
         println("learningRateLoop exploded gradients")
       } else {
-          val ratioOnTrainSet = 100 * Evaluator(gridSearchModel, trainSetName)
-          val ratioOnValidSet = 100 * Evaluator(gridSearchModel, validationSetName)
+          val ratioOnTrainSet = Evaluator(gridSearchModel, trainSetName)._1
+          val ratioOnValidSet = Evaluator(gridSearchModel, validationSetName)._1
           gridSearchParams.+=((wordDim, hiddenDim, vectorRegStrength, matrixRegStrength, learningRate, ratioOnTrainSet, ratioOnValidSet))
           println("ratioOnTrainSet %4.2f\tratioOnValidSet %4.2f\t".format(ratioOnTrainSet, ratioOnValidSet))
           historyWriter.write(wordDim + " " + hiddenDim + " " + vectorRegStrength + " " + matrixRegStrength + " " + learningRate + " " + ratioOnValidSet + "\n")

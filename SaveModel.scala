@@ -1,7 +1,9 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import java.io.{File, PrintWriter}
+import java.util.Calendar
 
+import scala.io.Source
 import scala.util.Random
 
 
@@ -39,5 +41,26 @@ object SaveModel {
     println("We have written "+count+" words")
   }
 
+  def saveModelToFile(fileName:String): Unit = {
+    println("Same model to file.")
+    val now = Calendar.getInstance().getTime.toString
+    val actualWordWriter = new PrintWriter(new File("./data/assignment3/"+now+fileName ))
+  }
+
+  def printBestParamFromFile(filename:String):Unit = {
+      val bestParam = Source.fromFile("./data/assignment3/" + filename)
+        .getLines().foldLeft(Seq[String]())((a, line) => {
+          line.replace("wordDim=","").replace("vectorReg=","").replace("learningRate=","")
+          val params = line.split(" ").toSeq
+          if (a.length==0 || params(params.length-2).toDouble > a(params.length-2).toDouble) {
+            println("best "+params)
+            params
+          } else {
+            println("best "+a)
+            a
+          }
+        })
+      println(bestParam)
+  }
 
 }

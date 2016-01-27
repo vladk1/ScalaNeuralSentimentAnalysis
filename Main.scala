@@ -26,10 +26,12 @@ object Main extends App {
 //  StochasticGradientDescentLearner(testModel, trainSetName, 100, 0.01)
 
 // q. 4.3.4)
-  val wordDimSet = 10 to 11 by 1
-  val vectorRegStrengthSet = (-6.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
-  val learningRateSet = (-6.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
-  runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
+//  val wordDimSet = 10 to 11 by 1
+//  val vectorRegStrengthSet = (-6.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
+//  val learningRateSet = (-6.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
+//  runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
+  // prints out best set of hyperparameters based on 6th log in the file
+//  SaveModel.printBestParamFromFile("sumofword_grid_search_param_history.txt", 6)
 //  ToDo we can visualize parameter space i.e. 3d graph of params and validation set
 
 
@@ -48,11 +50,11 @@ object Main extends App {
 
 
 // q. 4.4.2) run norm SGDL with RNN model for debug
-//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
-//  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
-//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, isEarlyStop=true, rnnParamsLogString, "rnn_run_param_history.txt")
-//
-//
+  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
+  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
+  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, isEarlyStop=true, rnnParamsLogString, "rnn_run_param_history.txt")
+//  SaveModel.printBestParamFromFile("rnn_run_param_history.txt", 6)
+
 //  val wordDimRange = 6 to 10 by 2
 //  val hiddenDimRange = 4 to 8 by 2
 //  val vectorRegStrengthRange = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))

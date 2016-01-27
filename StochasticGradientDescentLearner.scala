@@ -32,16 +32,16 @@ object StochasticGradientDescentLearner extends App {
   def epochHook(iter: Int, accLoss: Double, model: Model, epoch_loop:Breaks, previousDevLoss:Double): Double = {
     val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // accuracy percentage, loss
     val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
-    println("Epoch %4d\tLoss %8.2f\tTrain_Acc %4.2f\tDev_Acc %4.2f\n".format(
-      iter, accLoss, evaluatorOnTrainSet._1, evaluatorOnValidSet._1))
+    println("Epoch %4d\tLoss %8.2f\tTrain_Acc %4.2f\tDev_Acc %4.2f\t%4.2f\n".format(
+      iter, accLoss, evaluatorOnTrainSet._1, evaluatorOnValidSet._1, evaluatorOnValidSet._2))
 
     // early stopping if loss on valid. set not going down
-//    if (evaluatorOnValidSet._2 > previousDevLoss) {
-//      epoch_loop.break()
-//      println("Break! " + evaluatorOnValidSet._2)
-//    } else {
-//      println(evaluatorOnValidSet._2)
-//    }
+    if (evaluatorOnValidSet._2 > previousDevLoss || evaluatorOnTrainSet._2.isNaN) {
+      epoch_loop.break()
+      println("Break! " + evaluatorOnValidSet._2)
+    } else {
+      println(evaluatorOnValidSet._2)
+    }
     evaluatorOnValidSet._2
   }
 

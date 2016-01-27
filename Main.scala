@@ -22,8 +22,19 @@ object Main extends App {
   //11) 75.37 (7,1.0E-5,0.1)1 iter => deeper
 //  10,  0.1,  0.0031622776601683794
 //  10, 0.01, 0.01, 83.65680110666567, 76.36484687083887
+//  example of making model and storing it
 //  val testModel = new SumOfWordVectorsModel(10, 0.01)
-//  StochasticGradientDescentLearner(testModel, trainSetName, 100, 0.01)
+//  val testParamsLogString = (10, 0.01, 0.01).productIterator.toList.mkString(" ")
+//  StochasticGradientDescentLearner(testModel, trainSetName, 10, 0.01, isEarlyStop=true, testParamsLogString, "test_sumofword_run_param_history.txt")
+//  val result = testModel.predict("doesn't not enjoy re-piercing ears".split(" "))
+//  println("result of loaded model is "+result)
+//  SaveModel.saveModelToFile(testModel, "test_sumofword_model.txt")
+//  example of loading model
+//  SaveModel.loadModelFromFile("Wed Jan 27 13:53:05 GMT 2016test_sumofword_model.txt")
+//  val loadedModel = new SumOfWordVectorsModel(10, 0.01)
+//  val loadedResult = loadedModel.predict("doesn't not enjoy re-piercing ears".split(" "))
+//  println("result of loaded model is "+loadedResult)
+
 
 // q. 4.3.4)
 //  val wordDimSet = 10 to 11 by 1

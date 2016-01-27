@@ -115,8 +115,7 @@ class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double =
 class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
                                   vectorRegularizationStrength: Double = 0.0,
                                   matrixRegularizationStrength: Double = 0.0) extends Model {
-  override val vectorParams: mutable.HashMap[String, VectorParam] =
-    LookupTable.trainableWordVectors
+  override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
   vectorParams += "param_w" -> VectorParam(hiddenSize) // supposed to be embeddingSize, currently hiddenSize
   vectorParams += "param_h0" -> VectorParam(hiddenSize)
   vectorParams += "param_b" -> VectorParam(hiddenSize)
@@ -140,8 +139,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   }
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = {
-//      println("score")
-      Sigmoid(Dot(sentence, vectorParams("param_w")))
+     Sigmoid(Dot(sentence, vectorParams("param_w")))
   }
 
   def regularizer(words: Seq[Block[Vector]]): Loss =

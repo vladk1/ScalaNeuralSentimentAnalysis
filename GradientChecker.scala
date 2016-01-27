@@ -101,7 +101,7 @@ object GradientChecker extends App {
     // MUL BLOCK
     val mulBlock = Mul(matrix, c)
     println("\nGradient checking MUL block wrt vectorParam: ")
-    GradientChecker(Dot(mulBlock, b), b)
+//    GradientChecker(Dot(mulBlock, b), b)
 //    GradientChecker(Dot(mulBlock,mulBlock), matrix)
 
     // TANH BLOCK
@@ -133,7 +133,7 @@ object GradientChecker extends App {
     GradientChecker(rnnLoss, b)
 
     // elementMul Block
-    val simpleElementMulBlock = Dot(ElementMul(a,a),b)
+    val simpleElementMulBlock = Dot(ElementMul(Seq(b,a)),b)
     print("elementMul wrt b: ")
     GradientChecker(simpleElementMulBlock, b)
 

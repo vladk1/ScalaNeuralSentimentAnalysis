@@ -50,17 +50,22 @@ object Main extends App {
 
 
 // q. 4.4.2) run norm SGDL with RNN model for debug
-  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
-  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
-  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, isEarlyStop=true, rnnParamsLogString, "rnn_run_param_history.txt")
-//  SaveModel.printBestParamFromFile("rnn_run_param_history.txt", 6)
+//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
+//  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
+//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, isEarlyStop=true, rnnParamsLogString, "rnn_run_param_history.txt")
 
-//  val wordDimRange = 6 to 10 by 2
-//  val hiddenDimRange = 4 to 8 by 2
-//  val vectorRegStrengthRange = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
-//  val matrixRegStrengthRange = (-4.0 to -1.0 by 1.0).map(a => Math.pow(10,a)) :+ 0.0
-//  val learningRateRange = (-3.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
+
+  val wordDimRange = 7 to 11 by 2
+  val hiddenDimRange = 3 to 7 by 2
+  val vectorRegStrengthRange = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
+  val matrixRegStrengthRange = (-4.0 to -1.0 by 1.0).map(a => Math.pow(10,a)) :+ 0.0
+  val learningRateRange = IndexedSeq(0.001, 0.01, 0.03, 0.1) //  (-3.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
 //  runGridSearchRNN(wordDimRange, hiddenDimRange, vectorRegStrengthRange, matrixRegStrengthRange, learningRateRange, 100)
+//  SaveModel.printBestParamFromFile("rnn_run_param_history.txt")
+
+
+  val mulOfWordModel = new MulOfWordsModel(10, 0.01)
+  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, "", "bullshit.txt")
 
 
 // q. 4.5)

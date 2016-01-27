@@ -208,8 +208,8 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 
       val prev_c = vectorParams("param_c0")
 
-      val c_t = Tanh(Sum(Seq(ElementMul(h_c._2, f), ElementMul(g, i))))
-      val h_t = ElementMul(c_t, o)
+      val c_t = Tanh(Sum(Seq(ElementMul(Seq(h_c._2, f)), ElementMul(Seq(g, i)))))
+      val h_t = ElementMul(Seq(c_t, o))
 //      println("h t here " + h_t)
       vectorParams("param_c0").set(c_t.output)
       (h_t, c_t)
@@ -229,4 +229,30 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
                                                            :+ matrixParams("param_W_o") :+ matrixParams("param_H_o")
                                                            :+ matrixParams("param_W_g") :+ matrixParams("param_H_g"):_*)
     )
+}
+
+
+/**
+  * Problem 4 - Second approach
+  * A multiplication of word vectors model
+  *
+  * @param embeddingSize dimension of the word vectors used in this model
+  * @param regularizationStrength strength of the regularization on the word vectors and global parameter vector w
+  */
+class MulOfWordsModel(embeddingSize: Int, regularizationStrength: Double = 0.001) extends Model {
+  /**
+    * We use a lookup table to keep track of the word representations
+    */
+  override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
+
+  vectorParams += "param_w" -> VectorParam(embeddingSize)
+
+  def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
+
+  def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = ElementMul(words)
+
+  def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
+
+  def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :_*)
+
 }

@@ -390,22 +390,31 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
 
 /**
   * A block representing element wise multiplication
-  * @param arg1 the left block evaluating to a matrix
-  * @param arg2 the right block evaluation to a vector
+  * @param args the sequence of blocks involved in element wise multiplication
   */
-case class ElementMul(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
+case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
+//arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
+
   def forward(): Vector = {
-    val output = arg1.forward() :* arg2.forward()
+    val mulVect = args.map(_.forward())
+    val init = vec((0 until mulVect(0).activeSize).map(i => 1.0):_*)
+    output = mulVect.foldRight(init)((arg, prod) => {
+      prod :* arg
+  })
     output
   }
 
   def backward(gradient: Vector): Unit = {
-    arg1.backward(gradient :* arg2.forward())
-    arg2.backward(gradient :* arg1.forward())
+
+    var curGrad = output
+    curGrad = curGrad :* gradient
+
+    args.foreach(arg => {
+      arg.backward(curGrad :/ arg.output)
+    })
   }
 
   def update(learningRate: Double): Unit = {
-    arg1.update(learningRate)
-    arg2.update(learningRate)
+    args.foreach(_.update(learningRate))
   }
 }

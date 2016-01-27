@@ -178,8 +178,8 @@ case class Dot(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Double] {
   }
 
   def backward(gradient: Double): Unit = {
-    arg1.backward(arg2.forward() * gradient)
-    arg2.backward(arg1.forward() * gradient)
+    arg1.backward(arg2.output * gradient)
+    arg2.backward(arg1.output * gradient)
   }
 
   def update(learningRate: Double): Unit = {
@@ -303,8 +303,8 @@ case class MatrixParam(dim1: Int, dim2: Int, clip: Double = 10.0) extends ParamB
 case class Mul(arg1: Block[Matrix], arg2: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = arg1.forward() * arg2.forward()
   def backward(gradient: Vector): Unit = {
-    arg1.backward(outer(gradient, arg2.forward())) // (original) gradient *  arg2'
-    arg2.backward(arg1.forward().t * gradient) // arg1' * gradient
+    arg1.backward(outer(gradient, arg2.output)) // (original) gradient *  arg2'
+    arg2.backward(arg1.output.t * gradient) // arg1' * gradient
   }
   def update(learningRate: Double): Unit = {
     arg1.update(learningRate)
@@ -355,18 +355,12 @@ case class Dropout(prob: Double, arg: Block[Vector]) extends Block[Vector] {
 case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = {
     output = sigmoid(arg.forward())
-//    println("sig output" + output)
     output
   }
   def backward(gradient: Vector): Unit = {
-//    val x = arg.output
-//    val localGradient = sigmoid(x) * (1 - sigmoid(x))
-//    arg.backward(localGradient * gradient)
-//    pass debug
-//    arg.backward(gradient)
       val in = arg.output
       val local = {
-       in.map(x => sigmoid(x) * (1 - sigmoid(x)))
+       in.map(x => (sigmoid(x) * (1 - sigmoid(x))))
       }
       arg.backward(gradient :* local)
   }
@@ -378,19 +372,37 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
   * @param arg1 the left block evaluating to a matrix
   * @param arg2 the right block evaluation to a vector
   */
-case class ElementMul(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
+/**
+  * A block representing element wise multiplication
+  * @param args the sequence of blocks involved in element wise multiplication
+  */
+/**
+  * A block representing element wise multiplication
+  * @param args the sequence of blocks involved in element wise multiplication
+  */
+case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
+  //arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
+
   def forward(): Vector = {
-    val output = arg1.forward() :* arg2.forward()
+    val mulVect = args.map(_.forward())
+    val init = vec((0 until mulVect(0).activeSize).map(i => 1.0):_*)
+    output = mulVect.foldRight(init)((arg, prod) => {
+      prod :* arg
+    })
     output
   }
 
   def backward(gradient: Vector): Unit = {
-    arg1.backward(gradient :* arg2.forward())
-    arg2.backward(gradient :* arg1.forward())
+
+    var curGrad = output
+    curGrad = curGrad :* gradient
+
+    args.foreach(arg => {
+      arg.backward(curGrad :/ arg.output)
+    })
   }
 
   def update(learningRate: Double): Unit = {
-    arg1.update(learningRate)
-    arg2.update(learningRate)
+    args.foreach(_.update(learningRate))
   }
 }

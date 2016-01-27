@@ -131,15 +131,13 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
-    val h0:Block[Vector] = vectorParams("param_h0")
-    val hn = words.foldLeft(h0)((h_prev, wordVector) => {
+    words.foldLeft(vectorParams("param_w"):Block[Vector])((h_prev, wordVector) => {
       val Wh_h_prev = Mul(matrixParams("param_Wh"), h_prev)
       val Wx_x_t = Mul(matrixParams("param_Wx"), wordVector)
       val b = vectorParams("param_b")
-      val new_h = Tanh(Sum(Seq(Wh_h_prev, Wx_x_t, b))).forward()
+      val new_h = Tanh(Sum(Seq(Wh_h_prev, Wx_x_t, b)))
       new_h
     })
-    hn
   }
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = {
@@ -177,7 +175,10 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
   vectorParams += "param_w" -> VectorParam(hiddenSize)
   vectorParams += "param_h0" -> VectorParam(hiddenSize)
   vectorParams += "param_c0" -> VectorParam(hiddenSize)
-  vectorParams += "param_b" -> VectorParam(hiddenSize)
+  vectorParams += "param_b_i" -> VectorParam(hiddenSize)
+  vectorParams += "param_b_f" -> VectorParam(hiddenSize)
+  vectorParams += "param_b_g" -> VectorParam(hiddenSize)
+  vectorParams += "param_b_o" -> VectorParam(hiddenSize)
 
   override val matrixParams: mutable.HashMap[String, MatrixParam] =
     new mutable.HashMap[String, MatrixParam]()
@@ -189,47 +190,54 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
   matrixParams += "param_H_o" -> MatrixParam(hiddenSize, hiddenSize)
   matrixParams += "param_W_g" -> MatrixParam(hiddenSize, embeddingSize)
   matrixParams += "param_H_g" -> MatrixParam(hiddenSize, hiddenSize)
-//  matrixParams += "param_Wx" -> MatrixParam(???, ???)
-//  matrixParams += "param_Wh" -> MatrixParam(???, ???)
+
+  // Initialize parameters
+  vectorParams("param_b_i").set(DenseVector.zeros[Double](hiddenSize))
+  vectorParams("param_b_f").set(DenseVector.zeros[Double](hiddenSize))
+  vectorParams("param_b_g").set(DenseVector.zeros[Double](hiddenSize))
+  vectorParams("param_b_o").set(DenseVector.zeros[Double](hiddenSize))
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
-    val h_0:Block[Vector] = vectorParams("param_h0")
-    var c_0:Block[Vector] = vectorParams("param_c0")
-//    c_prev.set(DenseVector.zeros(hiddenSize))
-//    println("c_prev" + c_prev.forward() )
-//    println("word size" + words.size)
-    val h_n = words.foldLeft(h_0)((h_prev, x_t) => {
-      val i = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_i"), x_t), Mul(matrixParams("param_H_i"), h_prev))))
-      val f = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_f"), x_t), Mul(matrixParams("param_H_f"), h_prev))))
-      val o = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_o"), x_t), Mul(matrixParams("param_H_o"), h_prev))))
-      val g = Tanh(Sum(Seq(Mul(matrixParams("param_W_g"), x_t), Mul(matrixParams("param_H_g"), h_prev))))
-
-      val c_t = Sum(Seq(ElementMul(c_0, f), ElementMul(g, i)))
-
-//      println ("c heree " + c + "")
-
-      val h_t = ElementMul(Tanh(c_t), o).forward()
-//      println("c cache" + c_curr.output)
-      c_0 = c_t.forward()
-//      println("c_prev" + c_curr.forward())
-//      println("h_prev" + h_prev)
-      h_t
+//    println(words.size)
+    val h_n = words.foldLeft((vectorParams("param_h0"):Block[Vector],vectorParams("param_c0"):Block[Vector]))((hc, x_t) => {
+      val i = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_i"), x_t), Mul(matrixParams("param_H_i"), hc._1), vectorParams("param_b_i"))))
+      val f = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_f"), x_t), Mul(matrixParams("param_H_f"), hc._1), vectorParams("param_b_f"))))
+      val o = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_o"), x_t), Mul(matrixParams("param_H_o"), hc._1), vectorParams("param_b_o"))))
+      val g = Tanh(Sum(Seq(Mul(matrixParams("param_W_g"), x_t), Mul(matrixParams("param_H_g"), hc._1), vectorParams("param_b_g"))))
+      val c_t = Sum(Seq(ElementMul(Seq(hc._2, f)), ElementMul(Seq(g, i))))
+      val h_t = ElementMul(Seq(Tanh(c_t), o))
+//      println(h_t)
+      (h_t, c_t)
     })
-//    println("h_n" + h_n)
-    vectorParams("param_h0").set(h_n.forward())
-    h_n
+//    println(h_n._1)
+    h_n._1
   }
 
-  def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
+  def scoreSentence(sentence: Block[Vector]): Block[Double] = {
+    print(".")
+    val output = Sigmoid(Dot(sentence, vectorParams("param_w")))
+    println('.')
+    output
+  }
+
+//  def regularizer(words: Seq[Block[Vector]]): Loss =
+//    new LossSum(
+//      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0"):_*),
+//      L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_W_i") :+ matrixParams("param_H_i")
+//                                                           :+ matrixParams("param_W_f") :+ matrixParams("param_H_f")
+//                                                           :+ matrixParams("param_W_o") :+ matrixParams("param_H_o")
+//                                                           :+ matrixParams("param_W_g") :+ matrixParams("param_H_g"):_*)
+//    )
 
   def regularizer(words: Seq[Block[Vector]]): Loss =
     new LossSum(
-      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0"):_*),
+      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0")
+              :+vectorParams("param_b_i"):+vectorParams("param_b_f"):+vectorParams("param_b_g"):+vectorParams("param_b_o"):_*),
       L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_W_i") :+ matrixParams("param_H_i")
-                                                           :+ matrixParams("param_W_f") :+ matrixParams("param_H_f")
-                                                           :+ matrixParams("param_W_o") :+ matrixParams("param_H_o")
-                                                           :+ matrixParams("param_W_g") :+ matrixParams("param_H_g"):_*)
+                                                    :+ matrixParams("param_W_f") :+ matrixParams("param_H_f")
+                                                    :+ matrixParams("param_W_o") :+ matrixParams("param_H_o")
+                                                    :+ matrixParams("param_W_g") :+ matrixParams("param_H_g"):_*)
     )
 }

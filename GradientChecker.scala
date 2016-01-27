@@ -133,7 +133,7 @@ object GradientChecker extends App {
     GradientChecker(rnnLoss, b)
 
     // elementMul Block
-    val simpleElementMulBlock = Dot(ElementMul(a,a),b)
+    val simpleElementMulBlock = Dot(ElementMul(Seq(a,a)),b)
     print("elementMul wrt b: ")
     GradientChecker(simpleElementMulBlock, b)
 

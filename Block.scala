@@ -55,6 +55,14 @@ trait GaussianDefaultInitialization extends DefaultInitialization {
   def defaultInitialization(): Double = random.nextGaussian() * 0.1
 }
 
+trait ZeroInitialization extends DefaultInitialization {
+  def defaultInitialization(): Double = 0.0
+}
+
+trait GaussianDifferentInit extends DefaultInitialization {
+  def defaultInitialization(): Double = random.nextGaussian() * 0.15
+}
+
 /**
   * A simple block that represents a constant double value
   * @param arg the constant double value
@@ -106,10 +114,10 @@ class LossSum(override val args: Loss*) extends DoubleSum(args:_*) with Loss {
   * @param dim dimension of the vector
   * @param clip defines range in which gradients are clipped, i.e., (-clip, clip)
   */
-case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector] with GaussianDefaultInitialization {
+case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector] with ZeroInitialization {
   var param: Vector = initialize(defaultInitialization)//vec((0 until dim).map(i => defaultInitialization()):_*)
-  val gradParam: Vector = DenseVector.zeros[Double](dim)//vec((0 until dim).map(i => 0.0):_*)
-
+//  val gradParam: Vector = DenseVector.zeros[Double](dim)//vec((0 until dim).map(i => 0.0):_*)
+  val gradParam: Vector = initialize(defaultInitialization)
   /**
     * @return the current value of the vector parameter and caches it into output
     */
@@ -304,8 +312,8 @@ case class MatrixParam(dim1: Int, dim2: Int, clip: Double = 10.0) extends ParamB
 case class Mul(arg1: Block[Matrix], arg2: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = arg1.forward() * arg2.forward()
   def backward(gradient: Vector): Unit = {
-    arg1.backward(outer(gradient, arg2.forward())) // (original) gradient *  arg2'
-    arg2.backward(arg1.forward().t * gradient) // arg1' * gradient
+    arg1.backward(outer(gradient, arg2.output)) // (original) gradient *  arg2'
+    arg2.backward(arg1.output.t * gradient) // arg1' * gradient
   }
   def update(learningRate: Double): Unit = {
     arg1.update(learningRate)

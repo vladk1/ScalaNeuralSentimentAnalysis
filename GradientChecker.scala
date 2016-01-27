@@ -132,9 +132,9 @@ object GradientChecker extends App {
     println("\nGradient Checking RNN model: ")
     GradientChecker(rnnLoss, b)
 
-    // elementMul Block
+    // ELEMENT WISE MULTIPLICATION Block
     val simpleElementMulBlock = Dot(ElementMul(Seq(b,a)),b)
-    print("elementMul wrt b: ")
+    println("\nGradient Checking SUM OF WORDS model: ")
     GradientChecker(simpleElementMulBlock, b)
 
     // vectorSigmoid Block

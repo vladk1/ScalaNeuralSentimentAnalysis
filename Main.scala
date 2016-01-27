@@ -50,9 +50,9 @@ object Main extends App {
 
 
 // q. 4.4.2) run norm SGDL with RNN model for debug
-//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
+  val RNNmodel: Model = new RecurrentNeuralNetworkModel(7, 3, 0.00001, 0.0001)
 //  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
-//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, isEarlyStop=true, rnnParamsLogString, "rnn_run_param_history.txt")
+  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.001, isEarlyStop=true, "", "rnn_run_param_history.txt")
 
 
   val wordDimRange = 7 to 11 by 2
@@ -64,8 +64,8 @@ object Main extends App {
 //  SaveModel.printBestParamFromFile("rnn_run_param_history.txt")
 
 
-  val mulOfWordModel = new MulOfWordsModel(10, 0.01)
-  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, "", "bullshit.txt")
+//  val mulOfWordModel = new MulOfWordsModel(10, 0.005)
+//  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, "", "bullshit.txt")
 
 
 // q. 4.5)

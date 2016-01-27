@@ -401,7 +401,6 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
   * @param args the sequence of blocks involved in element wise multiplication
   */
 case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
-//arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
 
   def forward(): Vector = {
     val mulVect = args.map(_.forward())

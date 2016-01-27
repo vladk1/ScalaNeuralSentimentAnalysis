@@ -45,6 +45,16 @@ object Main extends App {
 //  SaveModel.printBestParamFromFile("sumofword_grid_search_param_history.txt", 6)
 //  ToDo we can visualize parameter space i.e. 3d graph of params and validation set
 
+//  ________
+//  val mulOfWordModel = new MulOfWordsModel(10, 0.01)
+//  val mulOfWordParamsLogString = (10, 0.01, 0.01).productIterator.toList.mkString(" ")
+//  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, mulOfWordParamsLogString, "mulOfWordModelLog.txt")
+
+  val wordDimSet = 6 to 11 by 1
+  val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
+  val learningRateSet = (-5.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
+  runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
+
 
 // q. 4.3.5)
 //  val wordDim = 8
@@ -97,6 +107,17 @@ object Main extends App {
         val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegStrength)
 
         StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, isEarlyStop=true, paramsLogString, "sumofword_grid_search_param_history.txt")
+    }
+  }
+
+//  multiplication of word vectors model
+  def runGridSearchOnMultOfWord(wordDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
+    for (wordDim <- wordDimSet; vectorRegStrength <- vectorRegStrengthSet; learningRate <- learningRateSet) {
+      LookupTable.trainableWordVectors.clear()
+      val paramsLogString = "wordDim="+wordDim+" vectorReg="+vectorRegStrength+" learningRate="+learningRate
+      val gridSearchModel = new MulOfWordsModel(wordDim, vectorRegStrength)
+
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, isEarlyStop=true, paramsLogString, "multOfWord_grid_search_param_history.txt")
     }
   }
 

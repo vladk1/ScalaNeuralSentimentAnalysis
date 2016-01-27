@@ -126,7 +126,7 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   matrixParams += "param_Wh" -> MatrixParam(hiddenSize, hiddenSize)
 
   // Initialize parameters
-//  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
+  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 

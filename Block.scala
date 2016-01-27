@@ -114,10 +114,10 @@ class LossSum(override val args: Loss*) extends DoubleSum(args:_*) with Loss {
   * @param dim dimension of the vector
   * @param clip defines range in which gradients are clipped, i.e., (-clip, clip)
   */
-case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector] with ZeroInitialization {
+case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector] with GaussianDefaultInitialization {
   var param: Vector = initialize(defaultInitialization)//vec((0 until dim).map(i => defaultInitialization()):_*)
-//  val gradParam: Vector = DenseVector.zeros[Double](dim)//vec((0 until dim).map(i => 0.0):_*)
-  val gradParam: Vector = initialize(defaultInitialization)
+  val gradParam: Vector = DenseVector.zeros[Double](dim)//vec((0 until dim).map(i => 0.0):_*)
+//  val gradParam: Vector = initialize(defaultInitialization)
   /**
     * @return the current value of the vector parameter and caches it into output
     */

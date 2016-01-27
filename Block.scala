@@ -178,8 +178,8 @@ case class Dot(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Double] {
   }
 
   def backward(gradient: Double): Unit = {
-    arg1.backward(arg2.forward() * gradient)
-    arg2.backward(arg1.forward() * gradient)
+    arg1.backward(arg2.output * gradient)
+    arg2.backward(arg1.output * gradient)
   }
 
   def update(learningRate: Double): Unit = {

@@ -24,8 +24,8 @@ object Main extends App {
   val learningRate = 0.01 // tried 0.01, 0.1, 1.0, 10.0, 1.0,
   val vectorRegularizationStrength = 0.001 // tried 0.01, 0.1, 0.01, _, _, 5.0
   val matrixRegularizationStrength = 0.001 // tried 0.01, 0.1, 0.01, _, _, 5.0, 0.01
-  val wordDim = 6 // tried 10, 5
-  val hiddenDim = 6 // tried 10, 5
+  val wordDim = 8 // tried 10, 5
+  val hiddenDim = 8 // tried 10, 5
 
 
   val trainSetName = "train"
@@ -40,8 +40,8 @@ object Main extends App {
   //11) 75.37 (7,1.0E-5,0.1)1 iter => deeper
 //  10,  0.1,  0.0031622776601683794
 //  10, 0.01, 0.01, 83.65680110666567, 76.36484687083887
-  val testModel = new SumOfWordVectorsModel(10, 0.01)
-  StochasticGradientDescentLearner(testModel, trainSetName, 100, 0.01)
+//  val testModel = new SumOfWordVectorsModel(10, 0.01)
+//  StochasticGradientDescentLearner(testModel, trainSetName, 100, 0.01)
 
 // q. 4.3.4)
 //    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
@@ -59,6 +59,9 @@ object Main extends App {
 // q. 4.4.2)
 //  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
 //  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate)
+
+  val LSTMModel = new LSTMModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
+  StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, learningRate)
 
 
   def runGridSearch(wordDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
@@ -169,7 +172,7 @@ object Main extends App {
   // in case Nan - lower learning rate (hence we can stop iterating after reaching Nan in this loop)
   val learningRateRange = (-3.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
 
-  runGridSearchRNN(wordDimRange, hiddenDimRange, vectorRegStrengthRange, matrixRegStrengthRange, learningRateRange, 100)
+//  runGridSearchRNN(wordDimRange, hiddenDimRange, vectorRegStrengthRange, matrixRegStrengthRange, learningRateRange, 100)
 
   def runGridSearchRNN(wordDimRange:Range, hiddenDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],  learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
     val historyWriter = new PrintWriter(new File("./data/assignment3/param_history_rnn2.txt"))

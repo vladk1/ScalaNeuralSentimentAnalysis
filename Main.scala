@@ -1,9 +1,8 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import java.io.{File, PrintWriter}
+
 import scala.collection.mutable
-import scala.util.Random
-import scala.util.control.Breaks
 
 /**
  * @author rockt
@@ -58,8 +57,9 @@ object Main extends App {
 
 // run norm SGDL with RNN model for debug
 // q. 4.4.2)
-  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
-  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate)
+//  val rnnModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
+//  val paramsLogString = (wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength).productIterator.toList.mkString(" ")
+//  StochasticGradientDescentLearner(rnnModel, trainSetName, 100, learningRate, paramsLogString)
 
 //  val LSTMModel = new LSTMModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
 //  StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, learningRate)
@@ -67,16 +67,13 @@ object Main extends App {
   def runGridSearch(wordDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
     val historyWriter = new PrintWriter(new File("./data/assignment3/param_history.txt" ))
     val gridSearchParams = mutable.MutableList[(Int, Double, Double, Double, Double)]()
-    val loop = new Breaks
 
     for (wordDim <- wordDimSet; vectorRegStrength <- vectorRegStrengthSet) {
-        loop.breakable {
-          for (learningRate <- learningRateSet) {
-            println(LookupTable.trainableWordVectors.size)
-            LookupTable.trainableWordVectors.clear()
-            println(LookupTable.trainableWordVectors.size)
-            runSGDwithParam(wordDim, vectorRegStrength, learningRate, epochs)
-          }
+      for (learningRate <- learningRateSet) {
+        println(LookupTable.trainableWordVectors.size)
+        LookupTable.trainableWordVectors.clear()
+        println(LookupTable.trainableWordVectors.size)
+        runSGDwithParam(wordDim, vectorRegStrength, learningRate, epochs)
       }
     }
     historyWriter.close()
@@ -89,19 +86,17 @@ object Main extends App {
 
     def runSGDwithParam(wordDim:Int, vectorRegStrength:Double, learningRate:Double, epochs:Int):Unit = {
       val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegStrength)
-      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate)
+      val paramsLogString = (wordDim, vectorRegularizationStrength, learningRate).productIterator.toList.mkString(" ")
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, paramsLogString)
 
       println("wordDim %d\tvectorRegStrength %4.10f\tlearningRate %4.10f\t".format(wordDim, vectorRegStrength, learningRate))
-      if (false && hasExplodingGradient(gridSearchModel)) {
-        loop.break() // don't increase learning rate, as we already have exploding gradients
-        println("learningRateLoop exploded gradients")
-      } else {
-        val ratioOnTrainSet = Evaluator(gridSearchModel, trainSetName)._1
-        val ratioOnValidSet = Evaluator(gridSearchModel, validationSetName)._1
-        gridSearchParams.+=((wordDim, vectorRegStrength, learningRate, ratioOnTrainSet, ratioOnValidSet))
-        println("ratioOnTrainSet %4.2f\tratioOnValidSet %4.2f\t".format(ratioOnTrainSet, ratioOnValidSet))
-        historyWriter.write(wordDim + " " + vectorRegStrength + " " + learningRate + " " + ratioOnValidSet+"\n")
-      }
+
+      val ratioOnTrainSet = Evaluator(gridSearchModel, trainSetName)._1
+      val ratioOnValidSet = Evaluator(gridSearchModel, validationSetName)._1
+      gridSearchParams.+=((wordDim, vectorRegStrength, learningRate, ratioOnTrainSet, ratioOnValidSet))
+      println("ratioOnTrainSet %4.2f\tratioOnValidSet %4.2f\t".format(ratioOnTrainSet, ratioOnValidSet))
+      historyWriter.write(wordDim + " " + vectorRegStrength + " " + learningRate + " " + ratioOnValidSet+"\n")
+
       println("\n")
     }
 }
@@ -115,7 +110,8 @@ object Main extends App {
   def iterateThroughEpochs(wordDim:Int, vectorRegularizationStrength:Double, learningRate:Double): Unit = {
     for (epochs <- 1 to 50 by 1) {
       val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegularizationStrength)
-      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate)
+      val paramsLogString = (wordDim, vectorRegularizationStrength, learningRate).productIterator.toList.mkString(" ")
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, paramsLogString)
     }
   }
 
@@ -138,23 +134,19 @@ object Main extends App {
   // in case Nan - lower learning rate (hence we can stop iterating after reaching Nan in this loop)
   val learningRateRange = (-3.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
 
-//  runGridSearchRNN(wordDimRange, hiddenDimRange, vectorRegStrengthRange, matrixRegStrengthRange, learningRateRange, 100)
+  runGridSearchRNN(wordDimRange, hiddenDimRange, vectorRegStrengthRange, matrixRegStrengthRange, learningRateRange, 100)
 
   def runGridSearchRNN(wordDimRange:Range, hiddenDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],  learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
-    val historyWriter = new PrintWriter(new File("./data/assignment3/param_history_rnn2.txt"))
+
     val gridSearchParams = mutable.MutableList[(Int, Int, Double, Double, Double, Double, Double)]()
-    val loop = new Breaks
 
     for (wordDim <- wordDimRange; hiddenDim <- hiddenDimSet; vectorRegStrength <- vectorRegStrengthSet; matrRegS <- matrixRegStrengthSet) {
-      loop.breakable {
-        for (learningRate <- learningRateSet) {
-          LookupTable.trainableWordVectors.clear()
-//          println(LookupTable.trainableWordVectors.size)
-          runSGDwithParamRNN(wordDim, hiddenDim, vectorRegStrength, matrRegS, learningRate, epochs)
-        }
+      for (learningRate <- learningRateSet) {
+        LookupTable.trainableWordVectors.clear()
+        runSGDwithParamRNN(wordDim, hiddenDim, vectorRegStrength, matrRegS, learningRate, epochs)
       }
     }
-    historyWriter.close()
+
     if (gridSearchParams.isEmpty) {
       println("No best grid search parameters at that range!")
     } else {
@@ -165,19 +157,9 @@ object Main extends App {
 
     def runSGDwithParamRNN(wordDim:Int, hiddenDim:Int, vectorRegStrength:Double, matrixRegStrength:Double, learningRate:Double, epochs:Int):Unit = {
       val gridSearchModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegStrength, matrixRegStrength)
-      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate)
-
+      val paramsLogString = (wordDim, vectorRegStrength, vectorRegStrength, learningRate).productIterator.toList.mkString(" ")
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, paramsLogString)
       println("wordDim = hiddenDim %d\tvectorRegStrength %4.10f\t vectorRegStrength %4.10f\t learningRate %4.10f\t".format(wordDim, vectorRegStrength, vectorRegStrength, learningRate))
-//      if (hasExplodingGradient(gridSearchModel)) {
-//        loop.break() // don't increase learning rate, as we already have exploding gradients
-//        println("learningRateLoop exploded gradients")
-//      } else {
-          val ratioOnTrainSet = Evaluator(gridSearchModel, trainSetName)._1
-          val ratioOnValidSet = Evaluator(gridSearchModel, validationSetName)._1
-          gridSearchParams.+=((wordDim, hiddenDim, vectorRegStrength, matrixRegStrength, learningRate, ratioOnTrainSet, ratioOnValidSet))
-          println("ratioOnTrainSet %4.2f\tratioOnValidSet %4.2f\t".format(ratioOnTrainSet, ratioOnValidSet))
-          historyWriter.write(wordDim + " " + hiddenDim + " " + vectorRegStrength + " " + matrixRegStrength + " " + learningRate + " " + ratioOnValidSet + "\n")
-//      }
       println()
     }
   }

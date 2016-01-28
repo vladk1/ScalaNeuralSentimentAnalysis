@@ -53,8 +53,12 @@ object Main extends App {
   val wordDimSet = 6 to 11 by 1
   val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
   val learningRateSet = (-5.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
-  runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
 
+  val mulModel = new MulOfWordsModel(7, 0.001)
+//  val sumOfWordModel = new SumOfWordVectorsModel(10, 0.01)
+  StochasticGradientDescentLearner(mulModel, trainSetName, 100, 0.01, isEarlyStop=true, "", "mulOfWordModelLogg.txt")
+
+//  runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
 
 // q. 4.3.5)
 //  val wordDim = 8
@@ -71,9 +75,9 @@ object Main extends App {
 
 
 // q. 4.4.2) run norm SGDL with RNN model for debug
-  val RNNmodel: Model = new RecurrentNeuralNetworkModel(7, 3, 0.00001, 0.0001)
+//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(7, 3, 0.00001, 0.0001)
 //  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
-  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.001, isEarlyStop=true, "", "rnn_run_param_history.txt")
+//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.001, isEarlyStop=true, "", "rnn_run_param_history.txt")
 
 
   val wordDimRange = 7 to 11 by 2

@@ -1,11 +1,12 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import breeze.numerics.sigmoid
-import uk.ac.ucl.cs.mr.statnlpbook.assignment3.Block
+import uk.ac.ucl.cs.mr.statnlpbook.assignment3._
 
 import scala.collection.mutable
 import breeze.linalg._
 
+import scala.util.Random
 /**
  * @author rockt
  */
@@ -244,13 +245,32 @@ class MulOfWordsModel(embeddingSize: Int, regularizationStrength: Double = 0.001
   override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
 
   vectorParams += "param_w" -> VectorParam(embeddingSize)
+  vectorParams += "param_bias" -> VectorParam(embeddingSize)
+
+  var init = DenseVector.zeros[Double](embeddingSize)
+  init(0 to embeddingSize-1) := 1.0 / embeddingSize
+  // random.nextGaussian() * 0.001
+  vectorParams("param_bias").set(init)
+
+  // DenseVector.zeros[Double](embeddingSize)
+
+//  vectorParams("param_w").set(DenseVector.zeros[Double](embeddingSize))
+  vectorParams("param_w").set(init)
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
-  def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = ElementMul(words)
+  def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
+    val dropedWords = words.map(word => Dropout(0.0002, word))
+    val dropedMulWords = words.map(word => DropoutForMul(0.0002, word))
+
+//    println(dropedWords)
+//    println("after dropping")
+//    println(dropedMulWords)
+    Sum(Seq(ElementMul(words), Sum(words), vectorParams("param_bias")))
+  }
 
   def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
 
-  def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :_*)
+  def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_bias") :_*)
 
 }

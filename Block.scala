@@ -163,7 +163,8 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
 case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
   def forward(): Vector = {
     val stepSumVector = args.map(_.forward())
-    val init = vec((0 until stepSumVector(0).activeSize).map(i => 0.0):_*)
+    var init = DenseVector.zeros[Double](stepSumVector(0).output.activeSize)
+
     output = stepSumVector.foldRight(init)((arg, sum) => {
       sum :+= arg
     })
@@ -356,13 +357,42 @@ case class Dropout(prob: Double, arg: Block[Vector]) extends Block[Vector] {
     val x = Random.nextInt(100)
     x < 100*prob
   }
+
   def forward(): Vector = {
+    val argument = arg.forward()
+    output = DenseVector.zeros[Double](argument.activeSize)
+
     if (isDrop) {
-      arg.forward()
-    } else {
-      DenseVector.zeros[Double](arg.output.length)
+      output = argument
     }
+    output
   }
+
+  def update(learningRate: Double): Unit = {
+    arg.update(learningRate)
+  }
+  def backward(gradient: Vector): Unit = {
+    arg.backward(gradient)
+  }
+}
+
+
+case class DropoutForMul(prob: Double, arg: Block[Vector]) extends Block[Vector] {
+  val isDrop = {
+    val x = Random.nextInt(100)
+    x < 100*prob
+  }
+
+  def forward(): Vector = {
+    val argument = arg.forward()
+    output = DenseVector.zeros[Double](argument.activeSize)
+
+    if (isDrop) {
+      output = argument
+    }
+    output
+  }
+
   def update(learningRate: Double): Unit = {
     arg.update(learningRate)
   }
@@ -403,8 +433,10 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
 case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
 
   def forward(): Vector = {
-    val mulVect = args.map(_.forward())
-    val init = vec((0 until mulVect(0).activeSize).map(i => 1.0):_*)
+    val mulVect = args.map(arg => arg.forward())
+
+    var init = DenseVector.zeros[Double](mulVect(0).output.activeSize) :+ 1.0
+
     output = mulVect.foldRight(init)((arg, prod) => {
       prod :* arg
   })

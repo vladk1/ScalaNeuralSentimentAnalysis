@@ -184,6 +184,21 @@ case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
   def update(learningRate: Double): Unit = args.foreach(_.update(learningRate))
 }
 
+case class Sub(args: Seq[Block[Vector]]) extends Block[Vector] {
+  def forward(): Vector = {
+    val stepSumVector = args.map(_.forward())
+    val init = vec((0 until stepSumVector(0).activeSize).map(i => 0.0):_*)
+    output = stepSumVector.foldRight(init)((arg, sum) => {
+      sum :-= arg
+    })
+    output
+  }
+  def backward(gradient: Vector): Unit = {
+    args.foreach(_.backward(gradient))
+  }
+  def update(learningRate: Double): Unit = args.foreach(_.update(learningRate))
+}
+
 /**
   * A block representing the dot product between two vectors
   *

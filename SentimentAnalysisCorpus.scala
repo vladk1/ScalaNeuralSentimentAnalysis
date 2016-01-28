@@ -2,6 +2,8 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 //import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
+import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
+
 import scala.util.Random
 
 /**

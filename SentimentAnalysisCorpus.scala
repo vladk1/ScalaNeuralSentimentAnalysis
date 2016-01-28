@@ -21,10 +21,15 @@ object SentimentAnalysisCorpus {
     tokenize(tweet) -> (target.toInt == 1)
   }).toIndexedSeq
 
-  var train: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/train.tsv", "ISO-8859-1").getLines())
-  var dev: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/dev.tsv", "ISO-8859-1").getLines())
-  var debug: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/debug.tsv", "ISO-8859-1").getLines())
-  var test: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/test.tsv", "ISO-8859-1").getLines())
+//  var train: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/train.tsv", "ISO-8859-1").getLines())
+//  var dev: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/dev.tsv", "ISO-8859-1").getLines())
+//  var debug: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/debug.tsv", "ISO-8859-1").getLines())
+//  var test: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/test.tsv", "ISO-8859-1").getLines())
+
+  var train: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/train.tsv")).getLines())
+  var dev: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/dev.tsv")).getLines())
+  var debug: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/debug.tsv")).getLines())
+  var test: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/test.tsv")).getLines())
 
   var trainCounter = 0
   var devCounter = 0

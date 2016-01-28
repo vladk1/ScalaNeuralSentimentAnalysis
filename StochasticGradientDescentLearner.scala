@@ -1,5 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
+import java.io.FileWriter
+
 import scala.util.control.Breaks
 
 /**
@@ -7,8 +9,9 @@ import scala.util.control.Breaks
  */
 object StochasticGradientDescentLearner extends App {
 
-  def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double): Unit = {
-    var previousDevLoss = Double.MaxValue
+  var previousDevLoss = Double.MaxValue
+
+  def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double, isEarlyStop:Boolean, parentParams:String, logFileName:String): Unit = {
     val epoch_loop = new Breaks
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
     epoch_loop.breakable {
@@ -18,31 +21,54 @@ object StochasticGradientDescentLearner extends App {
           if (j % 1000 == 0) print(s"Iter $j\r")
           val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
           val modelLoss = model.loss(sentence, target)
-          accLoss += modelLoss.forward()
+          val localLoss = modelLoss.forward()
           modelLoss.backward()
           modelLoss.update(learningRate) // updates parameters of the block
+          accLoss += localLoss
+//          println("accLoss + accLoss)
+          if (localLoss.isNaN) epoch_loop.break()
         }
-        if (i % 3 == 0) {
-          previousDevLoss = epochHook(i, accLoss, model, epoch_loop, previousDevLoss)
-        }
+        println("epoch" + i + "train acc loss" + accLoss)
+//        if (i > 10) {
+          epochHook(i, model, epoch_loop, parentParams, logFileName, isEarlyStop)
+//        }
       }
     }
   }
 
-  def epochHook(iter: Int, accLoss: Double, model: Model, epoch_loop:Breaks, previousDevLoss:Double): Double = {
-    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // accuracy percentage, loss
+  def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, logFileName:String, isEarlyStop:Boolean): Unit = {
+//    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // (accuracy percentage, loss)
     val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
-    println("Epoch %4d\tLoss %8.2f\tTrain_Acc %4.2f\tDev_Acc %4.2f \n".format(
-      iter, accLoss, evaluatorOnTrainSet._1, evaluatorOnValidSet._1))
+//    println("Epoch %4d\tTrain_Loss %8.2f\tTrain_Acc %4.2f\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
+//      iter, evaluatorOnTrainSet._2, evaluatorOnTrainSet._1, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
+//
+    saveBestSetToFile(iter, (0.0, 0.0), evaluatorOnValidSet, parentParams, logFileName)
+
+    println("Epoch %4d\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
+      iter, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
 
     // early stopping if loss on valid. set not going down
-    if (evaluatorOnValidSet._2 > previousDevLoss) {
-      epoch_loop.break()
-      println("Break! " + evaluatorOnValidSet._2)
-    } else {
-      println(evaluatorOnValidSet._2)
+//    if ((iter > 20) && evaluatorOnValidSet._2 > previousDevLoss && isEarlyStop) {
+//      epoch_loop.break()
+//      println("Break! " + evaluatorOnValidSet._2)
+//    }
+    previousDevLoss = evaluatorOnValidSet._2
+  }
+
+  // write acc and loss to file in format: (iter train_acc train_loss valid_acc valid_loss)
+  def saveBestSetToFile(iter: Int, evaluatorOnTrainSet: (Double, Double), evaluatorOnValidSet: (Double, Double), parentParams:String, logFileName:String) = {
+//    val historyWriter = new FileWriter("./data/assignment3/"+logFileName, true)
+    val historyWriter = new FileWriter(logFileName, true)
+    var outputToPrint = parentParams+" "+iter + " "
+    for (evalTrain <- evaluatorOnTrainSet.productIterator.toList) {
+      outputToPrint += (evalTrain.toString + " ")
     }
-    evaluatorOnValidSet._2
+    for (evalValid <- evaluatorOnValidSet.productIterator.toList) {
+      outputToPrint += (evalValid.toString + " ")
+    }
+    println(parentParams+"\n")
+    historyWriter.write(outputToPrint+"\n")
+    historyWriter.close()
   }
 
 }

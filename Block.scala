@@ -3,6 +3,8 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 import breeze.linalg._
 import breeze.numerics.{tanh, log, pow, sigmoid}
 
+import scala.util.Random
+
 
 /**
   * @author rockt
@@ -173,7 +175,6 @@ case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
 case class Dot(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Double] {
   def forward(): Double = {
     output = arg1.forward() dot arg2.forward()
-//    println("dot output" + output)
     output
   }
 
@@ -343,9 +344,23 @@ case class Tanh(arg: Block[Vector]) extends Block[Vector] {
   * @param arg a block evaluating to a vector whose components we want to drop
   */
 case class Dropout(prob: Double, arg: Block[Vector]) extends Block[Vector] {
-  def forward(): Vector = ???
-  def update(learningRate: Double): Unit = ???
-  def backward(gradient: Vector): Unit = ???
+  val isDrop = {
+    val x = Random.nextInt(100)
+    x < 100*prob
+  }
+  def forward(): Vector = {
+    if (isDrop) {
+      arg.forward()
+    } else {
+      DenseVector.zeros[Double](arg.output.length)
+    }
+  }
+  def update(learningRate: Double): Unit = {
+    arg.update(learningRate)
+  }
+  def backward(gradient: Vector): Unit = {
+    arg.backward(gradient)
+  }
 }
 
 /**
@@ -369,19 +384,11 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
 
 /**
   * A block representing element wise multiplication
-  * @param arg1 the left block evaluating to a matrix
-  * @param arg2 the right block evaluation to a vector
-  */
-/**
-  * A block representing element wise multiplication
   * @param args the sequence of blocks involved in element wise multiplication
   */
-/**
-  * A block representing element wise multiplication
-  * @param args the sequence of blocks involved in element wise multiplication
-  */
+
 case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
-  //arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
+//arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
 
   def forward(): Vector = {
     val mulVect = args.map(_.forward())

@@ -2,6 +2,8 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import java.io.FileWriter
 
+import uk.ac.ucl.cs.mr.statnlpbook.assignment3.SentimentAnalysisCorpus._
+
 import scala.util.control.Breaks
 
 /**
@@ -18,7 +20,7 @@ object StochasticGradientDescentLearner extends App {
       for (i <- 0 until maxEpochs) {
         var accLoss = 0.0
         for (j <- 0 until iterations) {
-          if (j % 1000 == 0) print(s"Iter $j\r")
+//          if (j % 1000 == 0) print(s"Iter $j\r")
           val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
           val modelLoss = model.loss(sentence, target)
           val localLoss = modelLoss.forward()
@@ -39,13 +41,11 @@ object StochasticGradientDescentLearner extends App {
   def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, logFileName:String, isEarlyStop:Boolean): Unit = {
 //    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // (accuracy percentage, loss)
     val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
-//    println("Epoch %4d\tTrain_Loss %8.2f\tTrain_Acc %4.2f\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
-//      iter, evaluatorOnTrainSet._2, evaluatorOnTrainSet._1, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
-//
-    saveBestSetToFile(iter, (0.0, 0.0), evaluatorOnValidSet, parentParams, logFileName)
 
     println("Epoch %4d\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
       iter, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
+
+//    saveBestSetToFile(iter, evaluatorOnTrainSet, evaluatorOnValidSet, parentParams, logFileName)
 
     // early stopping if loss on valid. set not going down
 //    if ((iter > 20) && evaluatorOnValidSet._2 > previousDevLoss && isEarlyStop) {
@@ -57,8 +57,7 @@ object StochasticGradientDescentLearner extends App {
 
   // write acc and loss to file in format: (iter train_acc train_loss valid_acc valid_loss)
   def saveBestSetToFile(iter: Int, evaluatorOnTrainSet: (Double, Double), evaluatorOnValidSet: (Double, Double), parentParams:String, logFileName:String) = {
-//    val historyWriter = new FileWriter("./data/assignment3/"+logFileName, true)
-    val historyWriter = new FileWriter(logFileName, true)
+    val historyWriter = new FileWriter(getClass.getResourceAsStream("/bestres.txt") + logFileName, true)
     var outputToPrint = parentParams+" "+iter + " "
     for (evalTrain <- evaluatorOnTrainSet.productIterator.toList) {
       outputToPrint += (evalTrain.toString + " ")

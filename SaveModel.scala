@@ -41,22 +41,45 @@ object SaveModel {
     println("We have written "+count+" words")
   }
 
-  def saveModelToFile(fileName:String): Unit = {
-    println("Same model to file.")
+  def saveModelToFile(model:Model, fileName:String): Unit = {
+    println("Save model to file.")
     val now = Calendar.getInstance().getTime.toString
     val actualWordWriter = new PrintWriter(new File("./data/assignment3/"+now+fileName ))
+    var j = 0
+    for ((paramName, paramBlock) <- model.vectorParams) {
+      actualWordWriter.write(paramName+" ")
+      actualWordWriter.write(paramBlock.param.toArray.mkString(",")+" \n")
+      if (j % 1000 == 0) print(s"Params $j\r")
+      j+=1
+    }
+    println("Done! : )")
   }
 
-  def printBestParamFromFile(filename:String):Unit = {
+  def loadModelFromFile(fileName:String): Unit = {
+    println("Load model from file.")
+    LookupTable.trainableWordVectors.clear()
+    var j = 0
+    Source.fromFile("./data/assignment3/" + fileName).getLines().foreach(line => {
+      val wordVectorSplit = line.split(" ")
+      val word = wordVectorSplit(0)
+      val vector = wordVectorSplit(1).split(",").map(i => i.toDouble)
+      LookupTable.addTrainableWordVector(word, vec((0 until vector.length).map(i => vector(i)):_*) )
+      if (j % 1000 == 0) print(s"Params $j\r")
+      j+=1
+    })
+    println("Done! : )")
+  }
+
+  def printBestParamFromFile(filename:String, scoreByValueInd:Int):Unit = {
       val bestParam = Source.fromFile("./data/assignment3/" + filename)
         .getLines().foldLeft(Seq[String]())((a, line) => {
           line.replace("wordDim=","").replace("vectorReg=","").replace("learningRate=","")
           val params = line.split(" ").toSeq
-          if (a.length==0 || params(params.length-2).toDouble > a(params.length-2).toDouble) {
-            println("best "+params)
+          if (a.length==0 || params(scoreByValueInd).toDouble > a(scoreByValueInd).toDouble) {
+//            println("best "+params)
             params
           } else {
-            println("best "+a)
+//            println("best "+a)
             a
           }
         })

@@ -31,8 +31,20 @@ object Main extends App {
   //11) 75.37 (7,1.0E-5,0.1)1 iter => deeper
 //  10,  0.1,  0.0031622776601683794
 //  10, 0.01, 0.01, 83.65680110666567, 76.36484687083887
+//  example of making model and storing it
 //  val testModel = new SumOfWordVectorsModel(10, 0.01)
-//  StochasticGradientDescentLearner(testModel, trainSetName, 100, 0.01, isEarlyStop=true, "", "sumofword_run_param_history.txt")
+
+//  val testParamsLogString = (10, 0.01, 0.01).productIterator.toList.mkString(" ")
+//  StochasticGradientDescentLearner(testModel, trainSetName, 10, 0.01, isEarlyStop=true, testParamsLogString, "test_sumofword_run_param_history.txt")
+//  val result = testModel.predict("doesn't not enjoy re-piercing ears".split(" "))
+//  println("result of loaded model is "+result)
+//  SaveModel.saveModelToFile(testModel, "test_sumofword_model.txt")
+//  example of loading model
+//  SaveModel.loadModelFromFile("Wed Jan 27 13:53:05 GMT 2016test_sumofword_model.txt")
+//  val loadedModel = new SumOfWordVectorsModel(10, 0.01)
+//  val loadedResult = loadedModel.predict("doesn't not enjoy re-piercing ears".split(" "))
+//  println("result of loaded model is "+loadedResult)
+
 
 // q. 4.3.4)
 //  val wordDimSet = 10 to 11 by 1
@@ -42,6 +54,16 @@ object Main extends App {
   // prints out best set of hyperparameters based on 6th log in the file
 //  SaveModel.printBestParamFromFile("sumofword_grid_search_param_history.txt", 6)
 //  ToDo we can visualize parameter space i.e. 3d graph of params and validation set
+
+//  ________
+//  val mulOfWordModel = new MulOfWordsModel(10, 0.01)
+//  val mulOfWordParamsLogString = (10, 0.01, 0.01).productIterator.toList.mkString(" ")
+//  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, mulOfWordParamsLogString, "mulOfWordModelLog.txt")
+
+  val wordDimSet = 6 to 11 by 1
+  val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
+  val learningRateSet = (-5.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
+  runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
 
 
 // q. 4.3.5)
@@ -59,12 +81,12 @@ object Main extends App {
 
 
 // q. 4.4.2) run norm SGDL with RNN model for debug
-//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(10, 10, 0.01, 0.01)
+//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(7, 3, 0.00001, 0.0001)
 //  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
-//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.01, isEarlyStop=true, rnnParamsLogString, "rnn_run_param_history.txt")
+//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.001, isEarlyStop=true, "", "rnn_run_param_history.txt")
 
 
-  LookupTable.trainableWordVectors.clear()
+    LookupTable.trainableWordVectors.clear()
     println("run LSTM train:dev")
     val LSTMModel = new LSTMModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
     StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, learningRate, isEarlyStop = true, "", "tt.txt")
@@ -78,9 +100,7 @@ object Main extends App {
 //  SaveModel.printBestParamFromFile("rnn_run_param_history.txt")
 
 
-
-
-//  val mulOfWordModel = new MulOfWordsModel(10, 0.01)
+//  val mulOfWordModel = new MulOfWordsModel(10, 0.005)
 //  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, "", "bullshit.txt")
 
 
@@ -102,6 +122,17 @@ object Main extends App {
         val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegStrength)
 
         StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, isEarlyStop=true, paramsLogString, "sumofword_grid_search_param_history.txt")
+    }
+  }
+
+//  multiplication of word vectors model
+  def runGridSearchOnMultOfWord(wordDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
+    for (wordDim <- wordDimSet; vectorRegStrength <- vectorRegStrengthSet; learningRate <- learningRateSet) {
+      LookupTable.trainableWordVectors.clear()
+      val paramsLogString = "wordDim="+wordDim+" vectorReg="+vectorRegStrength+" learningRate="+learningRate
+      val gridSearchModel = new MulOfWordsModel(wordDim, vectorRegStrength)
+
+      StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, isEarlyStop=true, paramsLogString, "multOfWord_grid_search_param_history.txt")
     }
   }
 

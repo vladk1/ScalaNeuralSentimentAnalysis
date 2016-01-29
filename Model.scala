@@ -59,13 +59,7 @@ trait Model {
    */
   def loss(sentence: Seq[String], target: Boolean): Loss = {
     val targetScore = if (target) 1.0 else 0.0
-
-    val start_time = System.nanoTime()
-    val filteredSentence = preprocessInput(sentence)
-    val preprocessTime = (System.nanoTime() - start_time) / 1e6
-//    println("preprocessTime="+preprocessTime)
-
-    val wordVectors = filteredSentence.map(wordToVector)
+    val wordVectors = sentence.map(wordToVector)
     val sentenceVector = wordVectorsToSentenceVector(wordVectors)
     val score = scoreSentence(sentenceVector)
     new LossSum(NegativeLogLikelihoodLoss(score, targetScore), regularizer(wordVectors))
@@ -162,15 +156,15 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
      Sigmoid(Dot(sentence, vectorParams("param_w")))
   }
 
-  def regularizer(words: Seq[Block[Vector]]): Loss =
+  def regularizer(words: Seq[Block[Vector]]): Loss = {
+    val l2matrixregul = Seq(matrixParams("param_Wh"), matrixParams("param_Wx"))
     new LossSum(
-        L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0") :+ vectorParams("param_b"):_*),
-        L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_Wh") :+ matrixParams("param_Wx"):_*)
+      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0") :+ vectorParams("param_b"): _*),
+      L2Regularization(matrixRegularizationStrength, l2matrixregul: _*)
     )
+  }
 }
-//vectorParams += "param_w" -> VectorParam(hiddenSize) // supposed to be embeddingSize, currently hiddenSize
-//vectorParams += "param_h0" -> VectorParam(hiddenSize)
-//vectorParams += "param_b" -> VectorParam(hiddenSize)
+
 /**
   * Problem 4
   * A LSTM model
@@ -185,12 +179,13 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
 class LSTMModel(embeddingSize: Int, hiddenSize: Int,
                                   vectorRegularizationStrength: Double = 0.0,
                                   matrixRegularizationStrength: Double = 0.0) extends Model {
-
+  println(s"LSTMModel: embedSize=$embeddingSize hiddenSize=$hiddenSize vectorReg=$vectorRegularizationStrength " +
+    s"matrixReg=$matrixRegularizationStrength \n")
   override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
   override val matrixParams: mutable.HashMap[String, MatrixParam] =
     new mutable.HashMap[String, MatrixParam]()
 
-  val vectorParamLabels = Seq("param_w", "param_h0", "param_c0", "param_b_i", "param_b_f", "param_b_g", "param_b_o")
+  val vectorParamLabels = Seq("param_w", "param_h0", "param_c0", "param_b_i", "param_b_f", "param_b_o", "param_b_g")
   vectorParamLabels.foreach(paramLabel => {
     vectorParams += paramLabel -> VectorParam(hiddenSize)
   })
@@ -205,11 +200,11 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
     matrixParams += paramLabel -> MatrixParam(hiddenSize, hiddenSize)
   })
 
-  // Initialize parameters
-  vectorParams("param_b_i").set(DenseVector.zeros[Double](hiddenSize))
-  vectorParams("param_b_f").set(DenseVector.zeros[Double](hiddenSize))
-  vectorParams("param_b_g").set(DenseVector.zeros[Double](hiddenSize))
-  vectorParams("param_b_o").set(DenseVector.zeros[Double](hiddenSize))
+  val biasLabels = Seq("param_b_i", "param_b_f", "param_b_g", "param_b_o")
+  // Initialize bias params to zero
+  biasLabels.foreach(paramLabel => {
+    vectorParams(paramLabel).set(DenseVector.zeros[Double](hiddenSize))
+  })
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
@@ -218,6 +213,11 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
     val wordVectors = filteredTokenizedSentence.map(wordToVector)
     val sentenceVector = wordVectorsToSentenceVector(wordVectors)
     scoreSentence(sentenceVector).forward() >= threshold
+  }
+
+  override def loss(sentence: Seq[String], target: Boolean): Loss = {
+    val filteredSentence = preprocessInput(sentence)
+    loss(filteredSentence, target)
   }
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
@@ -240,17 +240,17 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 
     val h_n = words.foldLeft((h0,c0))((prev, x_t) => {
 
-      val i = VectorSigmoid(Sum(Seq(Mul(W_i, x_t), Mul(H_i, prev._1), b_i)))
+      val i = VectorSigmoid(Sum(Seq(Mul(W_i, x_t), Mul(H_i, prev._1), b_i)))  // i = sigmoid( Wi⋅xt + Hi⋅h_(t-1) + bi )
 
-      val g = Tanh(Sum(Seq(Mul(W_g, x_t), Mul(H_g, prev._1), b_g)))
+      val g = Tanh(Sum(Seq(Mul(W_g, x_t), Mul(H_g, prev._1), b_g)))           // g = tanh( Wg⋅xt + Hg⋅h_(t-1) + bg )
 
-      val f = VectorSigmoid(Sum(Seq(Mul(W_f, x_t), Mul(H_f, prev._1), b_f)))
+      val f = VectorSigmoid(Sum(Seq(Mul(W_f, x_t), Mul(H_f, prev._1), b_f)))  // f = sigmoid( Wf⋅xt + Hf⋅h_(t-1) + bf )
 
-      val c_t = Sum(Seq(ElementMul(Seq(i, g)), ElementMul(Seq(f, prev._2))))
+      val c_t = Sum(Seq(ElementMul(Seq(i, g)), ElementMul(Seq(f, prev._2))))  // c = i * g + f * c_(t-1)
 
-      val o = VectorSigmoid(Sum(Seq(Mul(W_o, x_t), Mul(H_o, prev._1), b_o)))
+      val o = VectorSigmoid(Sum(Seq(Mul(W_o, x_t), Mul(H_o, prev._1), b_o)))  // o = sigmoid( Wo⋅xt + Ho⋅h_(t-1) + bo )
 
-      val h_t = ElementMul(Seq(Tanh(c_t), o))
+      val h_t = ElementMul(Seq(Tanh(c_t), o))                                 // h = tanh(c) * o
 
       (h_t, c_t)
     })
@@ -264,13 +264,14 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 
   def regularizer(words: Seq[Block[Vector]]): Loss = {
 
-//    val l2VectorArgs = vectorParamLabels.foldLeft(words)((args, paramLabel) => {
-//      args :+ vectorParams(paramLabel)
-//    })
-    val l2VectorArgs = vectorParamLabels.map(paramLabel => {
-      vectorParams(paramLabel)
+    val l2VectorArgs = (vectorParamLabels ++ biasLabels).foldLeft(words)((args, paramLabel) => {
+      args :+ vectorParams(paramLabel)
     })
-    val l2MatrixArgs = (matrixEmbeddLabels ++ matrixHiddenLabels).map( paramLabel => {
+//    use to remove word embeddings
+//    val l2VectorArgs = (vectorParamLabels ++ biasLabels).map(paramLabel => {
+//      vectorParams(paramLabel)
+//    })
+    val l2MatrixArgs = (matrixEmbeddLabels ++ matrixHiddenLabels).map(paramLabel => {
       matrixParams(paramLabel)
     })
 
@@ -285,6 +286,8 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 class GRUModel(embeddingSize: Int, hiddenSize: Int,
                 vectorRegularizationStrength: Double = 0.0,
                 matrixRegularizationStrength: Double = 0.0) extends Model {
+  println(s"GRUModel: embedSize=$embeddingSize hiddenSize=$hiddenSize vectorReg=$vectorRegularizationStrength " +
+    s"matrixReg=$matrixRegularizationStrength \n")
 
   override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
   override val matrixParams: mutable.HashMap[String, MatrixParam] =
@@ -305,10 +308,11 @@ class GRUModel(embeddingSize: Int, hiddenSize: Int,
     matrixParams += paramLabel -> MatrixParam(hiddenSize, hiddenSize)
   })
 
-  // Initialize parameters
-  vectorParams("param_b_z").set(DenseVector.zeros[Double](hiddenSize))
-  vectorParams("param_b_r").set(DenseVector.zeros[Double](hiddenSize))
-  vectorParams("param_b_g").set(DenseVector.zeros[Double](hiddenSize))
+  val biasLabels = Seq("param_b_z", "param_b_r", "param_b_g")
+  // Initialize bias params to zero
+  biasLabels.foreach(paramLabel => {
+    vectorParams(paramLabel).set(DenseVector.zeros[Double](hiddenSize))
+  })
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
@@ -317,6 +321,11 @@ class GRUModel(embeddingSize: Int, hiddenSize: Int,
     val wordVectors = filteredTokenizedSentence.map(wordToVector)
     val sentenceVector = wordVectorsToSentenceVector(wordVectors)
     scoreSentence(sentenceVector).forward() >= threshold
+  }
+
+  override def loss(sentence: Seq[String], target: Boolean): Loss = {
+    val filteredSentence = preprocessInput(sentence)
+    loss(filteredSentence, target)
   }
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
@@ -340,7 +349,7 @@ class GRUModel(embeddingSize: Int, hiddenSize: Int,
       val gg = ElementMul(Seq(r, prev_h))
       val g = Tanh(Sum(Seq(Mul(W_g, x_t), Mul(H_g, gg), b_g)))
 
-      val ones = vec((0 until embeddingSize).map(i => 1.0):_*)
+      val ones = vec((0 until hiddenSize).map(i => 1.0):_*)
       val zsub = Sub(Seq(ones, z))
       val h_t = Sum(Seq(ElementMul(Seq(zsub, prev_h)), ElementMul(Seq(z, g))))
 
@@ -357,11 +366,12 @@ class GRUModel(embeddingSize: Int, hiddenSize: Int,
 
   def regularizer(words: Seq[Block[Vector]]): Loss = {
 
-    val l2VectorArgs = vectorParamLabels.foldLeft(words)((args, paramLabel) => {
+    val l2VectorArgs = (vectorParamLabels ++ biasLabels).foldLeft(words)((args, paramLabel) => {
       args :+ vectorParams(paramLabel)
     })
 
-//    val l2VectorArgs = vectorParamLabels.map(paramLabel => {
+//    use to remove word embeddings
+//    val l2VectorArgs = (vectorParamLabels ++ biasLabels).map(paramLabel => {
 //      vectorParams(paramLabel)
 //    })
 

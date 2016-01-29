@@ -58,12 +58,17 @@ trait Model {
    * @return a block evaluating to the negative log-likelihood plus a regularization term
    */
   def loss(sentence: Seq[String], target: Boolean): Loss = {
+    calculateLossNormally(sentence, target)
+  }
+
+  def calculateLossNormally(sentence: Seq[String], target: Boolean): Loss = {
     val targetScore = if (target) 1.0 else 0.0
     val wordVectors = sentence.map(wordToVector)
     val sentenceVector = wordVectorsToSentenceVector(wordVectors)
     val score = scoreSentence(sentenceVector)
     new LossSum(NegativeLogLikelihoodLoss(score, targetScore), regularizer(wordVectors))
   }
+
 
   def isGood(s: String): Boolean = {
     if ((s.size <= 2) ||
@@ -217,7 +222,7 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 
   override def loss(sentence: Seq[String], target: Boolean): Loss = {
     val filteredSentence = preprocessInput(sentence)
-    loss(filteredSentence, target)
+    calculateLossNormally(filteredSentence, target)
   }
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
@@ -325,7 +330,7 @@ class GRUModel(embeddingSize: Int, hiddenSize: Int,
 
   override def loss(sentence: Seq[String], target: Boolean): Loss = {
     val filteredSentence = preprocessInput(sentence)
-    loss(filteredSentence, target)
+    calculateLossNormally(filteredSentence, target)
   }
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {

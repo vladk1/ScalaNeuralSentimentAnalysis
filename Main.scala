@@ -1,5 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
+import java.io.FileWriter
+
 /**
  * @author rockt
  */
@@ -12,6 +14,8 @@ object Main extends App {
 
   val trainSetName = "train" // "debug"
   val validationSetName = "dev"
+  val testSetName = "test"
+
 
   //11) 75.37 (7,1.0E-5,0.1)1 iter => deeper
 //  10,  0.1,  0.0031622776601683794
@@ -42,6 +46,8 @@ object Main extends App {
   val mulOfWordModel = new MulOfWordsModel(11, 0.001)
 //  val mulOfWordParamsLogString = (11, 0.001, 0.03).productIterator.toList.mkString(" ")
   StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.03, isEarlyStop=true, "", "mulOfWordModelLog.txt")
+
+  get_predictions(mulOfWordModel, testSetName, "predictions_own.txt")
 
   val wordDimSet = 6 to 11 by 1
   val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
@@ -115,8 +121,8 @@ object Main extends App {
   val lstmLearningRate = 0.05
   val LSTMModel = new LSTMModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
 
-  val lstmParamsLogString = (lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmLearningRate).productIterator.toList.mkString(" ")
-  StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
+//  val lstmParamsLogString = (lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmLearningRate).productIterator.toList.mkString(" ")
+//  StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
 
 //  runGridSearch(wordDimRange, vectorRegStrengthRange, learningRateRange, 100)
 
@@ -159,7 +165,25 @@ object Main extends App {
     }
   }
 
+  // prints to file the predicted sentiment (1 or 0) for each sentence in corpus
+  def get_predictions(model: Model, corpus: String, fileName: String): Unit ={
+    val predictionWriter = new FileWriter("./data/assignment3/" + fileName)
+    val iterations = SentimentAnalysisCorpus.numExamples(corpus)
+    println("there are %d sentences in test set".format(iterations))
+    for(iter <- 0 to iterations){
+      val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
+      predictionWriter.write(BoolToSentiment(model.predict(sentence)) + "\n")
+    }
+    predictionWriter.close()
+  }
 
+  def BoolToSentiment(bool: Boolean): Int ={
+    bool match{
+      case false => 0
+      case true => 1
+    }
+
+  }
 
   /**
    * Comment this in if you want to look at trained parameters

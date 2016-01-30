@@ -14,29 +14,20 @@ object StochasticGradientDescentLearner extends App {
   def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double, isEarlyStop:Boolean, parentParams:String, logFileName:String): Unit = {
     val epoch_loop = new Breaks
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
+    val startIterTime = System.nanoTime()
     epoch_loop.breakable {
       for (i <- 0 until maxEpochs) {
         var accLoss = 0.0
-        val startIterTime = System.nanoTime()
-        for (j <- 0 until iterations) { // 2000
+        println(parentParams)
+
+        for (j <- 0 until iterations) {
           val time = (System.nanoTime() - startIterTime) / 1e6
-          if (j % 100 == 0) print(s"Iter $j Time:$time\r")
+          if (j % 10000 == 0) print(s"Iter $j Time:$time\r")
           val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
-          val lossStartTime = System.nanoTime()
           val modelLoss = model.loss(sentence, target)
-//          println("modelLossTime="+(System.nanoTime() - lossStartTime) / 1e6)
-
-          val forwardStartTime = System.nanoTime()
           val localLoss = modelLoss.forward()
-//          println("forwardTime="+(System.nanoTime() - forwardStartTime) / 1e6)
-
-          val backwardStartTime = System.nanoTime()
           modelLoss.backward()
-//          println("backwardTime="+(System.nanoTime() - backwardStartTime) / 1e6)
-
-          val updateStartTime = System.nanoTime()
           modelLoss.update(learningRate) // updates parameters of the block
-//          println("updateTime="+(System.nanoTime() - updateStartTime) / 1e6)
           accLoss += localLoss
           if (localLoss.isNaN) epoch_loop.break()
         }
@@ -44,12 +35,15 @@ object StochasticGradientDescentLearner extends App {
         println("epoch=" + i + " train_acc_loss=" + accLoss)
 //        if (i > 10) {
 //          val start_time = System.nanoTime()
-//          epochHook(i, model, epoch_loop, parentParams, logFileName, isEarlyStop)
+          epochHook(i, model, epoch_loop, parentParams, logFileName, isEarlyStop)
 //          val diff = (System.nanoTime() - start_time) / 1e6
 //          println("timePerHook="+diff+"\n")
 //        }
       }
     }
+    val time = (System.nanoTime() - startIterTime) / 1e6
+    println("grid search step time = "+time)
+    println()
   }
 
   def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, logFileName:String, isEarlyStop:Boolean): Unit = {
@@ -60,7 +54,7 @@ object StochasticGradientDescentLearner extends App {
 //    saveBestSetToFile(iter, evaluatorOnTrainSet, evaluatorOnValidSet, parentParams, logFileName)
 
     // early stopping if loss on valid. set not going down
-    if ((iter > 20) && evaluatorOnValidSet._2 > previousDevLoss && isEarlyStop) {
+    if ((iter > 50) && evaluatorOnValidSet._2 > previousDevLoss && isEarlyStop) {
       epoch_loop.break()
       println("Break! " + evaluatorOnValidSet._2)
     }

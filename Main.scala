@@ -38,11 +38,13 @@ object Main extends App {
 //  runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
   // prints out best set of hyperparameters based on 6th log in the file
 //  SaveModel.printBestParamFromFile("sumofword_grid_search_param_history.txt", 6)
-//  ToDo we can visualize parameter space i.e. 3d graph of params and validation set
 
 //  ________
-//  val mulOfWordModel = new MulOfWordsModel(10, 0.01)
-//  val mulOfWordParamsLogString = (10, 0.01, 0.01).productIterator.toList.mkString(" ")
+//  val wordDim = 10
+//  val regStrength = 0.01
+//  val learningRate = 0.01
+//  val mulOfWordModel = new MulOfWordsModel(wordDim, regStrength)
+//  val mulOfWordParamsLogString = s"wordDim=$wordDim regStrength=$regStrength learningRate=$learningRate"
 //  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, mulOfWordParamsLogString, "mulOfWordModelLog.txt")
 
 //  val wordDimSet = 6 to 11 by 1
@@ -66,26 +68,35 @@ object Main extends App {
 
 
 // q. 4.4.2) run norm SGDL with RNN model for debug
-//  val RNNmodel: Model = new RecurrentNeuralNetworkModel(7, 3, 0.00001, 0.0001)
-//  val rnnParamsLogString = (10, 10, 0.01, 0.01, 0.01).productIterator.toList.mkString(" ")
-//  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.001, isEarlyStop=true, "", "rnn_run_param_history.txt")
-
+  //  Epoch   21	Dev_Loss 765.38	Dev_Acc 77.50
+  //  9 7 0.001 0.001 0.001
+  val RNNmodel: Model = new RecurrentNeuralNetworkModel(9, 7, 0.001, 0.001)
+  val rnnParamsLogString = (9, 7, 0.001, 0.001).productIterator.toList.mkString(" ")
+  StochasticGradientDescentLearner(RNNmodel, trainSetName, 100, 0.001, isEarlyStop=true, "", "rnn_run_param_history.txt")
 
 //    LookupTable.trainableWordVectors.clear()
 //    println("run LSTM train:dev")
 //    val LSTMModel = new LSTMModel(wordDim, hiddenDim, vectorRegularizationStrength, matrixRegularizationStrength)
 //    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, learningRate, isEarlyStop = true, "", "tt.txt")
 
+  // Tim settings:
+  // init learning rate [1E-4, 3E-4, 1E-3]
+  // dropout [0.0, 0.1, 0.2]
+  // reg [0.0, 1E-4, 3E-4, 1E-3]
+
 //  val wordDimRange = 7 to 11 by 2
-//  val hiddenDimRange = 3 to 7 by 2
-//  val vectorRegStrengthRange = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
-//  val matrixRegStrengthRange = (-4.0 to -1.0 by 1.0).map(a => Math.pow(10,a)) :+ 0.0
-//  val learningRateRange = IndexedSeq(0.001, 0.01, 0.03, 0.1) //  (-3.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
-//  runGridSearchRNN(wordDimRange, hiddenDimRange, vectorRegStrengthRange, matrixRegStrengthRange, learningRateRange, 100)
+//  val hiddenDimRange = 7 to 11 by 2
+//  val regStrengthRange = IndexedSeq(0.0, Math.pow(10,-4), 3*Math.pow(10,-4), Math.pow(10,-3))
+//  val matrixRegStrengthRange = IndexedSeq(Math.pow(10,-4), 0.001)
+
+//  best: Epoch   21	Dev_Loss 765.38	Dev_Acc 77.50 9 7 0.001 0.001 0.001
+//  val learningRateRange = IndexedSeq(0.001)
+//  runGridSearchRNN(wordDimRange, hiddenDimRange, regStrengthRange, regStrengthRange, learningRateRange, 100)
 //  SaveModel.printBestParamFromFile("rnn_run_param_history.txt")
 
 //  val mulOfWordModel = new MulOfWordsModel(10, 0.005)
 //  StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, "", "bullshit.txt")
+
 
 
 // q. 4.5)
@@ -94,7 +105,7 @@ object Main extends App {
   val lstmVectorRegulStrength = 0.001
   val lstmMatrixRegulStrength = 0.001
   val lstmLearningRate = 0.05
-  val LSTMModel = new GRUModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
+  val LSTMModel = new LSTMModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
 
   val lstmParamsLogString = (lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmLearningRate).productIterator.toList.mkString(" ")
   StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
@@ -107,7 +118,7 @@ object Main extends App {
         val gridSearchModel = new SumOfWordVectorsModel(wordDim, vectorRegStrength)
 
         StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, isEarlyStop=true, paramsLogString, "sumofword_grid_search_param_history.txt")
-    }
+    } // 100 27 381
   }
 
 //  multiplication of word vectors model
@@ -132,10 +143,10 @@ object Main extends App {
 
   def runGridSearchRNN(wordDimRange:Range, hiddenDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],
                        learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
-    for (wordDim <- wordDimRange; hiddenDim <- hiddenDimSet; vectorRegStrength <- vectorRegStrengthSet; matrRegS <- matrixRegStrengthSet; learningRate <- learningRateSet) {
+    for (wordDim <- wordDimRange; hiddenDim <- hiddenDimSet; regStrength <- vectorRegStrengthSet;  learningRate <- learningRateSet) {
         LookupTable.trainableWordVectors.clear()
-        val paramsLogString = (wordDim, hiddenDim, vectorRegStrength, matrRegS, learningRate).productIterator.toList.mkString(" ")
-        val gridSearchModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, vectorRegStrength, matrRegS)
+        val paramsLogString = (wordDim, hiddenDim, regStrength, regStrength, learningRate).productIterator.toList.mkString(" ")
+        val gridSearchModel = new RecurrentNeuralNetworkModel(wordDim, hiddenDim, regStrength, regStrength)
 
         StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, isEarlyStop=true, paramsLogString, "rnn_grid_search_param_history.txt")
     }

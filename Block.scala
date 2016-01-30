@@ -55,14 +55,6 @@ trait GaussianDefaultInitialization extends DefaultInitialization {
   def defaultInitialization(): Double = random.nextGaussian() * 0.1
 }
 
-trait ZeroInitialization extends DefaultInitialization {
-  def defaultInitialization(): Double = 0.0
-}
-
-trait GaussianDifferentInit extends DefaultInitialization {
-  def defaultInitialization(): Double = random.nextGaussian() * 0.15
-}
-
 /**
   * A simple block that represents a constant double value
   * @param arg the constant double value

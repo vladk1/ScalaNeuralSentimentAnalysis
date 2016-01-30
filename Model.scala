@@ -6,7 +6,6 @@ import uk.ac.ucl.cs.mr.statnlpbook.assignment3._
 import scala.collection.mutable
 import breeze.linalg._
 
-import scala.util.Random
 /**
  * @author rockt
  */
@@ -233,7 +232,7 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
 
 /**
   * Problem 4 - Second approach
-  * A multiplication of word vectors model
+  * A combination between multiplication and sum of word vectors model
   *
   * @param embeddingSize dimension of the word vectors used in this model
   * @param regularizationStrength strength of the regularization on the word vectors and global parameter vector w
@@ -249,23 +248,11 @@ class MulOfWordsModel(embeddingSize: Int, regularizationStrength: Double = 0.001
 
   var init = DenseVector.zeros[Double](embeddingSize)
   init(0 to embeddingSize-1) := 1.0 / embeddingSize
-  // random.nextGaussian() * 0.001
   vectorParams("param_bias").set(init)
-
-  // DenseVector.zeros[Double](embeddingSize)
-
-//  vectorParams("param_w").set(DenseVector.zeros[Double](embeddingSize))
-  vectorParams("param_w").set(init)
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
-    val dropedWords = words.map(word => Dropout(0.0002, word))
-    val dropedMulWords = words.map(word => DropoutForMul(0.0002, word))
-
-//    println(dropedWords)
-//    println("after dropping")
-//    println(dropedMulWords)
     Sum(Seq(ElementMul(words), Sum(words), vectorParams("param_bias")))
   }
 

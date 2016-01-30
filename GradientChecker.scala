@@ -71,7 +71,6 @@ object GradientChecker extends App {
     * A very silly block to test if gradient checking is working.
     * Will only work if the implementation of the Dot block is already correct
     */
-
     // GRADIENT CHECKING - INITIALIZATION
     val a = vec(-1.5, 1.0, 1.5, 0.5)
     val c = vec(1.0, 2.0, 5.0, 2.5)
@@ -100,7 +99,7 @@ object GradientChecker extends App {
 
     // MUL BLOCK
     val mulBlock = Mul(matrix, c)
-    println("\nGradient checking MUL block wrt vectorParam: ")
+//    println("\nGradient checking MUL block wrt vectorParam: ")
 //    GradientChecker(Dot(mulBlock, b), b)
 //    GradientChecker(Dot(mulBlock,mulBlock), matrix)
 
@@ -134,13 +133,12 @@ object GradientChecker extends App {
 
     // ELEMENT WISE MULTIPLICATION Block
     val simpleElementMulBlock = Dot(ElementMul(Seq(b,a)),b)
-    println("\nGradient Checking SUM OF WORDS model: ")
+    println("\nGradient Checking ELEMENT WISE MULTIPLICATION block: ")
     GradientChecker(simpleElementMulBlock, b)
 
     // vectorSigmoid Block
     val simpleVectorSigmoidBlock = Dot(VectorSigmoid(a), b)
-    println("Vector" + VectorSigmoid(a).forward())
-    print("vectorSigmoid wrt b: ")
+    println("\nGradient Checking ELEMENT WISE SIGMOID block: ")
     GradientChecker(simpleVectorSigmoidBlock, b)
 
 }

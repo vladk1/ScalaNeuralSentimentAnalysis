@@ -37,10 +37,10 @@ object StochasticGradientDescentLearner extends App {
   }
 
   def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, logFileName:String, isEarlyStop:Boolean): Unit = {
-//    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // (accuracy percentage, loss)
+    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // (accuracy percentage, loss)
     val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
-    println("Epoch %4d\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
-      iter, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
+    println("Epoch %4d\tTrain Acc %4.2f\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
+      iter, evaluatorOnTrainSet._1, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
 
 //    saveBestSetToFile(iter, evaluatorOnTrainSet, evaluatorOnValidSet, parentParams, logFileName)
 
@@ -54,7 +54,7 @@ object StochasticGradientDescentLearner extends App {
 
   // write acc and loss to file in format: (iter train_acc train_loss valid_acc valid_loss)
   def saveBestSetToFile(iter: Int, evaluatorOnTrainSet: (Double, Double), evaluatorOnValidSet: (Double, Double), parentParams:String, logFileName:String) = {
-    val historyWriter = new FileWriter(getClass.getResourceAsStream("/bestres.txt") + logFileName, true)
+    val historyWriter = new FileWriter("./data/assignment3/" + logFileName, true)
     var outputToPrint = parentParams+" "+iter + " "
     for (evalTrain <- evaluatorOnTrainSet.productIterator.toList) {
       outputToPrint += (evalTrain.toString + " ")

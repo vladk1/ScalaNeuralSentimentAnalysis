@@ -2,6 +2,8 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 //import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
+import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
+
 import scala.util.Random
 
 /**
@@ -20,17 +22,10 @@ object SentimentAnalysisCorpus {
     tokenize(tweet) -> (target.toInt == 1)
   }).toIndexedSeq
 
-//  val text = io.Source.fromInputStream(getClass.getResourceAsStream("bullshit.txt")).mkString
-//  println(text)
-  //  val stream : InputStream = getClass.getResourceAsStream("/readme.txt")
-
-//  var jarPath = new java.io.File("/resources")
-//  println(jarPath.getParent + "  this is paret   " + jarPath.getCanonicalPath + "   canonical path here  " + jarPath.getParentFile.getAbsolutePath  + "  parent file absolut path")
-  //ile(SentimentAnalysisCorpus.class.getProtectionDomain().getCodeSource().getLocation().getPath())
-
-  //  var train: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("./data/assignment3/train.tsv")).mkString).getLines()
-  //  var dev: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/dev.tsv", "ISO-8859-1").getLines())
-
+//  var train: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/train.tsv", "ISO-8859-1").getLines())
+//  var dev: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/dev.tsv", "ISO-8859-1").getLines())
+//  var debug: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/debug.tsv", "ISO-8859-1").getLines())
+//  var test: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/test.tsv", "ISO-8859-1").getLines())
 
   var train: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/train.tsv")).getLines())
   var dev: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/dev.tsv")).getLines())

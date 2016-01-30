@@ -2,9 +2,10 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import breeze.numerics.sigmoid
 import uk.ac.ucl.cs.mr.statnlpbook.assignment3._
+import breeze.linalg._
+import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
 import scala.collection.mutable
-import breeze.linalg._
 
 /**
  * @author rockt
@@ -59,12 +60,32 @@ trait Model {
    * @return a block evaluating to the negative log-likelihood plus a regularization term
    */
   def loss(sentence: Seq[String], target: Boolean): Loss = {
+    calculateLossNormally(sentence, target)
+  }
+
+  def calculateLossNormally(sentence: Seq[String], target: Boolean): Loss = {
     val targetScore = if (target) 1.0 else 0.0
     val wordVectors = sentence.map(wordToVector)
     val sentenceVector = wordVectorsToSentenceVector(wordVectors)
     val score = scoreSentence(sentenceVector)
     new LossSum(NegativeLogLikelihoodLoss(score, targetScore), regularizer(wordVectors))
   }
+
+
+  def isGood(s: String): Boolean = {
+    if ((s.size <= 2) ||
+      (s.charAt(0) == '@') ||
+      (s.matches("[\\p{Punct}\\s]+") && !s.matches("!")) ||
+      s.matches("[0-9]") ) false
+    else true
+    //       s.matches("[^\\w_\\s]+") || //to check non-english words
+  }
+  def preprocessInput(s: Seq[String]): Seq[String] = {
+    val noLinks = s.filterNot(word =>  word.contains("http") || word.contains("www")).mkString(" ")
+    val filteredTokenizedSentence = SentenceSplitter(TokenSplitter(noLinks)).tokenWords.filter(word => isGood(word)).slice(0, 6)
+    filteredTokenizedSentence
+  }
+
   /**
    * Regularizes the parameters of the model for a given input example
     *
@@ -142,21 +163,21 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
      Sigmoid(Dot(sentence, vectorParams("param_w")))
   }
 
-  def regularizer(words: Seq[Block[Vector]]): Loss =
+  def regularizer(words: Seq[Block[Vector]]): Loss = {
+    val l2matrixregul = Seq(matrixParams("param_Wh"), matrixParams("param_Wx"))
     new LossSum(
-        L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0") :+ vectorParams("param_b"):_*),
-        L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_Wh") :+ matrixParams("param_Wx"):_*)
+      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0") :+ vectorParams("param_b"): _*),
+      L2Regularization(matrixRegularizationStrength, l2matrixregul: _*)
     )
+  }
 }
-//vectorParams += "param_w" -> VectorParam(hiddenSize) // supposed to be embeddingSize, currently hiddenSize
-//vectorParams += "param_h0" -> VectorParam(hiddenSize)
-//vectorParams += "param_b" -> VectorParam(hiddenSize)
+
 /**
   * Problem 4
   * A LSTM model
   * Input gate parameters:
   *
-  * @param
+  *
   * @param embeddingSize dimension of the word vectors used in this model
   * @param hiddenSize dimension of the hidden state vector used in this model
   * @param vectorRegularizationStrength strength of the regularization on the word vectors and global parameter vector w
@@ -165,69 +186,213 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
 class LSTMModel(embeddingSize: Int, hiddenSize: Int,
                                   vectorRegularizationStrength: Double = 0.0,
                                   matrixRegularizationStrength: Double = 0.0) extends Model {
-  override val vectorParams: mutable.HashMap[String, VectorParam] =
-    LookupTable.trainableWordVectors
-//  vectorParams += "param_w" -> VectorParam(hiddenSize) // supposed to be embeddingSize, currently hiddenSize
-//  vectorParams += "param_h0" -> VectorParam(hiddenSize)
-//  vectorParams += "param_b" -> VectorParam(hiddenSize)
-  vectorParams += "param_w" -> VectorParam(hiddenSize)
-  vectorParams += "param_h0" -> VectorParam(hiddenSize)
-  vectorParams += "param_c0" -> VectorParam(hiddenSize)
-  vectorParams += "param_b" -> VectorParam(hiddenSize)
-
+  println(s"LSTMModel: embedSize=$embeddingSize hiddenSize=$hiddenSize vectorReg=$vectorRegularizationStrength " +
+    s"matrixReg=$matrixRegularizationStrength \n")
+  override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
   override val matrixParams: mutable.HashMap[String, MatrixParam] =
     new mutable.HashMap[String, MatrixParam]()
-  matrixParams += "param_W_i" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_H_i" -> MatrixParam(hiddenSize, hiddenSize)
-  matrixParams += "param_W_f" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_H_f" -> MatrixParam(hiddenSize, hiddenSize)
-  matrixParams += "param_W_o" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_H_o" -> MatrixParam(hiddenSize, hiddenSize)
-  matrixParams += "param_W_g" -> MatrixParam(hiddenSize, embeddingSize)
-  matrixParams += "param_H_g" -> MatrixParam(hiddenSize, hiddenSize)
-//  matrixParams += "param_Wx" -> MatrixParam(???, ???)
-//  matrixParams += "param_Wh" -> MatrixParam(???, ???)
+
+  val vectorParamLabels = Seq("param_w", "param_h0", "param_c0", "param_b_i", "param_b_f", "param_b_o", "param_b_g")
+  vectorParamLabels.foreach(paramLabel => {
+    vectorParams += paramLabel -> VectorParam(hiddenSize)
+  })
+
+  val matrixEmbeddLabels = Seq("param_W_i", "param_W_f", "param_W_o", "param_W_g")
+  matrixEmbeddLabels.foreach(paramLabel => {
+    matrixParams += paramLabel -> MatrixParam(hiddenSize, embeddingSize)
+  })
+
+  val matrixHiddenLabels = Seq("param_H_i", "param_H_f", "param_H_o", "param_H_g")
+  matrixHiddenLabels.foreach(paramLabel => {
+    matrixParams += paramLabel -> MatrixParam(hiddenSize, hiddenSize)
+  })
+
+  val biasLabels = Seq("param_b_i", "param_b_f", "param_b_g", "param_b_o")
+  // Initialize bias params to zero
+  biasLabels.foreach(paramLabel => {
+    vectorParams(paramLabel).set(DenseVector.zeros[Double](hiddenSize))
+  })
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
+  override def predict(sentence: Seq[String])(implicit threshold: Double = 0.5):Boolean = {
+    val filteredTokenizedSentence = preprocessInput(sentence)
+    val wordVectors = filteredTokenizedSentence.map(wordToVector)
+    val sentenceVector = wordVectorsToSentenceVector(wordVectors)
+    scoreSentence(sentenceVector).forward() >= threshold
+  }
+
+  override def loss(sentence: Seq[String], target: Boolean): Loss = {
+    val filteredSentence = preprocessInput(sentence)
+    calculateLossNormally(filteredSentence, target)
+  }
+
   def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
-    val h_0:Block[Vector] = vectorParams("param_h0")
-    var c_0:Block[Vector] = vectorParams("param_c0")
-    vectorParams("param_c0").set(DenseVector.zeros[Double](hiddenSize))
-//    c_prev.set(DenseVector.zeros(hiddenSize))
-//    println("c_prev" + c_prev.forward() )
-//    println("word size" + words.size)
+    val h0 = vectorParams("param_h0"):Block[Vector]
+    val c0 = vectorParams("param_c0"):Block[Vector]
+    val W_i = matrixParams("param_W_i")
+    val W_g = matrixParams("param_W_g")
+    val W_f = matrixParams("param_W_f")
+    val W_o = matrixParams("param_W_o")
 
-    val h_n = words.foldLeft(h_0, c_0)((h_c, x_t) => {
-      val i = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_i"), x_t), Mul(matrixParams("param_H_i"), h_c._1))))
-      val f = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_f"), x_t), Mul(matrixParams("param_H_f"), h_c._1))))
-      val o = VectorSigmoid(Sum(Seq(Mul(matrixParams("param_W_o"), x_t), Mul(matrixParams("param_H_o"), h_c._1))))
-      val g = Tanh(Sum(Seq(Mul(matrixParams("param_W_g"), x_t), Mul(matrixParams("param_H_g"), h_c._1))))
+    val H_i = matrixParams("param_H_i")
+    val H_g = matrixParams("param_H_g")
+    val H_f = matrixParams("param_H_f")
+    val H_o = matrixParams("param_H_o")
 
-      val prev_c = vectorParams("param_c0")
+    val b_i = vectorParams("param_b_i")
+    val b_g = vectorParams("param_b_g")
+    val b_f = vectorParams("param_b_f")
+    val b_o = vectorParams("param_b_o")
 
-      val c_t = Tanh(Sum(Seq(ElementMul(Seq(h_c._2, f)), ElementMul(Seq(g, i)))))
-      val h_t = ElementMul(Seq(c_t, o))
-//      println("h t here " + h_t)
-      vectorParams("param_c0").set(c_t.output)
+    val h_n = words.foldLeft((h0,c0))((prev, x_t) => {
+
+      val i = VectorSigmoid(Sum(Seq(Mul(W_i, x_t), Mul(H_i, prev._1), b_i)))  // i = sigmoid( Wi⋅xt + Hi⋅h_(t-1) + bi )
+
+      val g = Tanh(Sum(Seq(Mul(W_g, x_t), Mul(H_g, prev._1), b_g)))           // g = tanh( Wg⋅xt + Hg⋅h_(t-1) + bg )
+
+      val f = VectorSigmoid(Sum(Seq(Mul(W_f, x_t), Mul(H_f, prev._1), b_f)))  // f = sigmoid( Wf⋅xt + Hf⋅h_(t-1) + bf )
+
+      val c_t = Sum(Seq(ElementMul(Seq(i, g)), ElementMul(Seq(f, prev._2))))  // c = i * g + f * c_(t-1)
+
+      val o = VectorSigmoid(Sum(Seq(Mul(W_o, x_t), Mul(H_o, prev._1), b_o)))  // o = sigmoid( Wo⋅xt + Ho⋅h_(t-1) + bo )
+
+      val h_t = ElementMul(Seq(Tanh(c_t), o))                                 // h = tanh(c) * o
+
       (h_t, c_t)
     })
-    println("h_n" + h_n)
-    vectorParams("param_h0").set(h_n._1.output)
     h_n._1
   }
 
-  def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
+  def scoreSentence(sentence: Block[Vector]): Block[Double] = {
+    val output = Sigmoid(Dot(sentence, vectorParams("param_w")))
+    output
+  }
 
-  def regularizer(words: Seq[Block[Vector]]): Loss =
+  def regularizer(words: Seq[Block[Vector]]): Loss = {
+
+    val l2VectorArgs = (vectorParamLabels ++ biasLabels).foldLeft(words)((args, paramLabel) => {
+      args :+ vectorParams(paramLabel)
+    })
+//    use to remove word embeddings
+//    val l2VectorArgs = (vectorParamLabels ++ biasLabels).map(paramLabel => {
+//      vectorParams(paramLabel)
+//    })
+    val l2MatrixArgs = (matrixEmbeddLabels ++ matrixHiddenLabels).map(paramLabel => {
+      matrixParams(paramLabel)
+    })
+
     new LossSum(
-      L2Regularization(vectorRegularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_h0"):_*),
-      L2Regularization(matrixRegularizationStrength, words :+ matrixParams("param_W_i") :+ matrixParams("param_H_i")
-                                                           :+ matrixParams("param_W_f") :+ matrixParams("param_H_f")
-                                                           :+ matrixParams("param_W_o") :+ matrixParams("param_H_o")
-                                                           :+ matrixParams("param_W_g") :+ matrixParams("param_H_g"):_*)
+      L2Regularization(vectorRegularizationStrength, l2VectorArgs: _*),
+      L2Regularization(matrixRegularizationStrength, l2MatrixArgs: _*)
     )
+  }
 }
+
+
+class GRUModel(embeddingSize: Int, hiddenSize: Int,
+                vectorRegularizationStrength: Double = 0.0,
+                matrixRegularizationStrength: Double = 0.0) extends Model {
+  println(s"GRUModel: embedSize=$embeddingSize hiddenSize=$hiddenSize vectorReg=$vectorRegularizationStrength " +
+    s"matrixReg=$matrixRegularizationStrength \n")
+
+  override val vectorParams: mutable.HashMap[String, VectorParam] = LookupTable.trainableWordVectors
+  override val matrixParams: mutable.HashMap[String, MatrixParam] =
+    new mutable.HashMap[String, MatrixParam]()
+
+  val vectorParamLabels = Seq("param_w", "param_h0", "param_b_z", "param_b_r", "param_b_g")
+  vectorParamLabels.foreach(paramLabel => {
+    vectorParams += paramLabel -> VectorParam(hiddenSize)
+  })
+
+  val matrixEmbeddLabels = Seq("param_W_z", "param_W_r", "param_W_g")
+  matrixEmbeddLabels.foreach(paramLabel => {
+    matrixParams += paramLabel -> MatrixParam(hiddenSize, embeddingSize)
+  })
+
+  val matrixHiddenLabels = Seq("param_H_z", "param_H_r", "param_H_g")
+  matrixHiddenLabels.foreach(paramLabel => {
+    matrixParams += paramLabel -> MatrixParam(hiddenSize, hiddenSize)
+  })
+
+  val biasLabels = Seq("param_b_z", "param_b_r", "param_b_g")
+  // Initialize bias params to zero
+  biasLabels.foreach(paramLabel => {
+    vectorParams(paramLabel).set(DenseVector.zeros[Double](hiddenSize))
+  })
+
+  def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
+
+  override def predict(sentence: Seq[String])(implicit threshold: Double = 0.5):Boolean = {
+    val filteredTokenizedSentence = preprocessInput(sentence)
+    val wordVectors = filteredTokenizedSentence.map(wordToVector)
+    val sentenceVector = wordVectorsToSentenceVector(wordVectors)
+    scoreSentence(sentenceVector).forward() >= threshold
+  }
+
+  override def loss(sentence: Seq[String], target: Boolean): Loss = {
+    val filteredSentence = preprocessInput(sentence)
+    calculateLossNormally(filteredSentence, target)
+  }
+
+  def wordVectorsToSentenceVector(words: Seq[Block[Vector]]): Block[Vector] = {
+    val h0 = vectorParams("param_h0"):Block[Vector]
+    val b_z = vectorParams("param_b_z")
+    val b_r = vectorParams("param_b_r")
+    val b_g = vectorParams("param_b_g")
+
+    val W_z = matrixParams("param_W_z")
+    val W_r = matrixParams("param_W_r")
+    val W_g = matrixParams("param_W_g")
+    val H_z = matrixParams("param_H_z")
+    val H_r = matrixParams("param_H_r")
+    val H_g = matrixParams("param_H_g")
+
+    val h_n = words.foldLeft(h0)((prev_h, x_t) => {
+
+      val z = VectorSigmoid(Sum(Seq(Mul(W_z, x_t), Mul(H_z, prev_h), b_z)))
+      val r = VectorSigmoid(Sum(Seq(Mul(W_r, x_t), Mul(H_r, prev_h), b_r)))
+
+      val gg = ElementMul(Seq(r, prev_h))
+      val g = Tanh(Sum(Seq(Mul(W_g, x_t), Mul(H_g, gg), b_g)))
+
+      val ones = vec((0 until hiddenSize).map(i => 1.0):_*)
+      val zsub = Sub(Seq(ones, z))
+      val h_t = Sum(Seq(ElementMul(Seq(zsub, prev_h)), ElementMul(Seq(z, g))))
+
+      h_t
+    })
+
+    h_n
+  }
+
+  def scoreSentence(sentence: Block[Vector]): Block[Double] = {
+    val output = Sigmoid(Dot(sentence, vectorParams("param_w")))
+    output
+  }
+
+  def regularizer(words: Seq[Block[Vector]]): Loss = {
+
+    val l2VectorArgs = (vectorParamLabels ++ biasLabels).foldLeft(words)((args, paramLabel) => {
+      args :+ vectorParams(paramLabel)
+    })
+
+//    use to remove word embeddings
+//    val l2VectorArgs = (vectorParamLabels ++ biasLabels).map(paramLabel => {
+//      vectorParams(paramLabel)
+//    })
+
+    val l2MatrixArgs = (matrixEmbeddLabels ++ matrixHiddenLabels).map( paramLabel => {
+      matrixParams(paramLabel)
+    })
+
+    new LossSum(
+      L2Regularization(vectorRegularizationStrength, l2VectorArgs: _*),
+      L2Regularization(matrixRegularizationStrength, l2MatrixArgs: _*)
+    )
+  }
+}
+
 
 
 /**
@@ -261,3 +426,4 @@ class MulOfWordsModel(embeddingSize: Int, regularizationStrength: Double = 0.001
   def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :+ vectorParams("param_bias") :_*)
 
 }
+

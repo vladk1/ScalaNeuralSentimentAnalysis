@@ -12,6 +12,7 @@ import scala.util.Random
 
 /**
   * A trait for the core building **block** of our computation graphs
+  *
   * @tparam T the type parameter this block evaluates to (can be Double, Vector, Matrix)
   */
 trait Block[T] {
@@ -57,6 +58,7 @@ trait GaussianDefaultInitialization extends DefaultInitialization {
 
 /**
   * A simple block that represents a constant double value
+  *
   * @param arg the constant double value
   */
 case class DoubleConstant(arg: Double) extends Block[Double] with Loss {
@@ -69,6 +71,7 @@ case class DoubleConstant(arg: Double) extends Block[Double] with Loss {
 
 /**
   * A simple block that represents a constant vector
+  *
   * @param arg the constant vector
   */
 case class VectorConstant(arg: Vector) extends Block[Vector] {
@@ -80,6 +83,7 @@ case class VectorConstant(arg: Vector) extends Block[Vector] {
 
 /**
   * A block representing a sum of doubles
+  *
   * @param args a sequence of blocks that evaluate to doubles
   */
 case class DoubleSum(args: Block[Double]*) extends Block[Double] {
@@ -103,6 +107,7 @@ class LossSum(override val args: Loss*) extends DoubleSum(args:_*) with Loss {
 
 /**
   * A block representing a vector parameter
+  *
   * @param dim dimension of the vector
   * @param clip defines range in which gradients are clipped, i.e., (-clip, clip)
   */
@@ -119,6 +124,7 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
   }
   /**
     * Accumulates the gradient in gradParam
+    *
     * @param gradient an upstream gradient
     */
   def backward(gradient: Vector): Unit = gradParam :+= gradient
@@ -131,6 +137,7 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
   }
   /**
     * Updates param using the accumulated gradient. Clips the gradient to the interval (-clip, clip) before the update
+    *
     * @param learningRate learning rate used for the update
     */
   def update(learningRate: Double): Unit = {
@@ -139,6 +146,7 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
   }
   /**
     * Initializes the parameter randomly using a sampling function
+    *
     * @param dist sampling function
     * @return the random parameter vector
     */
@@ -150,6 +158,7 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
 
 /**
   * A block representing the sum of vectors
+  *
   * @param args a sequence of blocks that evaluate to vectors
   */
 case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
@@ -168,8 +177,24 @@ case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
   def update(learningRate: Double): Unit = args.foreach(_.update(learningRate))
 }
 
+case class Sub(args: Seq[Block[Vector]]) extends Block[Vector] {
+  def forward(): Vector = {
+    val stepSumVector = args.map(_.forward())
+    val init = vec((0 until stepSumVector(0).activeSize).map(i => 0.0):_*)
+    output = stepSumVector.foldRight(init)((arg, sum) => {
+      sum :-= arg
+    })
+    output
+  }
+  def backward(gradient: Vector): Unit = {
+    args.foreach(_.backward(gradient))
+  }
+  def update(learningRate: Double): Unit = args.foreach(_.update(learningRate))
+}
+
 /**
   * A block representing the dot product between two vectors
+  *
   * @param arg1 left block that evaluates to a vector
   * @param arg2 right block that evaluates to a vector
   */
@@ -192,6 +217,7 @@ case class Dot(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Double] {
 
 /**
   * A block representing the sigmoid of a scalar value
+  *
   * @param arg a block that evaluates to a double
   */
 case class Sigmoid(arg: Block[Double]) extends Block[Double] {
@@ -209,6 +235,7 @@ case class Sigmoid(arg: Block[Double]) extends Block[Double] {
 
 /**
   * A block representing the negative log-likelihood loss
+  *
   * @param arg a block evaluating to a scalar value
   * @param target the target value (1.0 positive sentiment, 0.0 negative sentiment)
   */
@@ -230,6 +257,7 @@ case class NegativeLogLikelihoodLoss(arg: Block[Double], target: Double) extends
 
 /**
   * A block representing the l2 regularization of a vector or matrix
+  *
   * @param strength the strength of the regularization (often denoted as lambda)
   * @param args a block evaluating to a vector or matrix
   * @tparam P type of the input block (we assume this is Block[Vector] or Block[Matrix]
@@ -269,6 +297,7 @@ case class L2Regularization[P](strength: Double, args: Block[P]*) extends Loss {
 
 /**
   * A block representing a matrix parameter
+  *
   * @param dim1 first dimension of the matrix
   * @param dim2 second dimension of the matrix
   * @param clip defines range in which gradients are clipped, i.e., (-clip, clip)
@@ -299,6 +328,7 @@ case class MatrixParam(dim1: Int, dim2: Int, clip: Double = 10.0) extends ParamB
 
 /**
   * A block representing matrix-vector multiplication
+  *
   * @param arg1 the left block evaluating to a matrix
   * @param arg2 the right block evaluation to a vector
   */
@@ -316,6 +346,7 @@ case class Mul(arg1: Block[Matrix], arg2: Block[Vector]) extends Block[Vector] {
 
 /**
   * A block rerpesenting the element-wise application of the tanh function to a vector
+  *
   * @param arg a block evaluating to a vector
   */
 case class Tanh(arg: Block[Vector]) extends Block[Vector] {
@@ -341,6 +372,7 @@ case class Tanh(arg: Block[Vector]) extends Block[Vector] {
 
 /**
   * A potentially useful block for training a better model (https://en.wikipedia.org/wiki/Dropout_(neural_networks))
+  *
   * @param prob dropout probability
   * @param arg a block evaluating to a vector whose components we want to drop
   */
@@ -395,23 +427,18 @@ case class DropoutForMul(prob: Double, arg: Block[Vector]) extends Block[Vector]
 
 /**
   * A block representing the sigmoid of a vector value
+  *
   * @param arg a vector that evaluates to a vector
   */
 case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
   def forward(): Vector = {
     output = sigmoid(arg.forward())
-//    println("sig output" + output)
     output
   }
   def backward(gradient: Vector): Unit = {
-//    val x = arg.output
-//    val localGradient = sigmoid(x) * (1 - sigmoid(x))
-//    arg.backward(localGradient * gradient)
-//    pass debug
-//    arg.backward(gradient)
       val in = arg.output
       val local = {
-       in.map(x => sigmoid(x) * (1 - sigmoid(x)))
+       in.map(x => (sigmoid(x) * (1 - sigmoid(x))))
       }
       arg.backward(gradient :* local)
   }
@@ -420,8 +447,10 @@ case class VectorSigmoid(arg: Block[Vector]) extends Block[Vector] {
 
 /**
   * A block representing element wise multiplication
+  *
   * @param args the sequence of blocks involved in element wise multiplication
   */
+
 case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
 
   def forward(): Vector = {
@@ -431,7 +460,7 @@ case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
 
     output = mulVect.foldRight(init)((arg, prod) => {
       prod :* arg
-  })
+    })
     output
   }
 
@@ -449,3 +478,20 @@ case class ElementMul(args: Seq[Block[Vector]]) extends Block[Vector]{
     args.foreach(_.update(learningRate))
   }
 }
+
+//case class ElementMul(arg1: Block[Vector], arg2: Block[Vector]) extends Block[Vector] {
+//
+//  def forward(): Vector = {
+//    arg1.forward() :* arg2.forward()
+//  }
+//
+//  def backward(gradient: Vector): Unit = {
+//    arg1.backward(gradient :* arg2.output)
+//    arg2.backward(gradient :* arg1.output)
+//  }
+//
+//  def update(learningRate: Double): Unit = {
+//    arg1.update(learningRate)
+//    arg2.update(learningRate)
+//  }
+//}

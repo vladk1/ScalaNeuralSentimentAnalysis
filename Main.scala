@@ -1,5 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
+import java.io.FileWriter
+
 /**
  * @author rockt
  */
@@ -12,6 +14,7 @@ object Main extends App {
 
   val trainSetName = "train" // "debug"
   val validationSetName = "dev"
+  val testSetName = "test"
 
 //  question2()
   question3()
@@ -79,6 +82,8 @@ object Main extends App {
     val mulOfWordParamsLogString = s"wordDim=$wordDim regStrength=$regStrength learningRate=$learningRate"
     StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, mulOfWordParamsLogString, "mulOfWordModelLog.txt")
 
+    get_predictions(mulOfWordModel, testSetName, "predictions_own.txt")
+
     val wordDimSet = 6 to 11 by 1
     val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
     val learningRateSet = (-5.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
@@ -128,8 +133,6 @@ object Main extends App {
     }
   }
 
-
-  //  multiplication of word vectors model
   def runGridSearchOnMultOfWord(wordDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], learningRateSet:IndexedSeq[Double], epochs:Int): Unit = {
     for (wordDim <- wordDimSet; vectorRegStrength <- vectorRegStrengthSet; learningRate <- learningRateSet) {
       LookupTable.trainableWordVectors.clear()
@@ -137,6 +140,26 @@ object Main extends App {
       val gridSearchModel = new MulOfWordsModel(wordDim, vectorRegStrength)
       StochasticGradientDescentLearner(gridSearchModel, trainSetName, epochs, learningRate, isEarlyStop=true, paramsLogString, "multOfWord_grid_search_param_history.txt")
     }
+  }
+
+  // prints to file the predicted sentiment (1 or 0) for each sentence in corpus
+  def get_predictions(model: Model, corpus: String, fileName: String): Unit ={
+    val predictionWriter = new FileWriter("./data/assignment3/" + fileName)
+    val iterations = SentimentAnalysisCorpus.numExamples(corpus)
+    println("there are %d sentences in test set".format(iterations))
+    for(iter <- 0 to iterations){
+      val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
+      predictionWriter.write(BoolToSentiment(model.predict(sentence)) + "\n")
+    }
+    predictionWriter.close()
+  }
+
+  def BoolToSentiment(bool: Boolean): Int ={
+    bool match{
+      case false => 0
+      case true => 1
+    }
+
   }
 
 

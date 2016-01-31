@@ -1,8 +1,7 @@
 package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
-import breeze.numerics.sigmoid
-import uk.ac.ucl.cs.mr.statnlpbook.assignment3._
 import breeze.linalg._
+import breeze.numerics._
 import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
 import scala.collection.mutable
@@ -19,6 +18,9 @@ trait Model {
    * Stores all matrix parameters
    */
   val matrixParams = new mutable.HashMap[String, MatrixParam]()
+
+  LookupTable.trainableWordVectors.clear()
+
   /**
    * Maps a word to its trainable or fixed vector representation
     *
@@ -148,6 +150,18 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
 
   // Initialize parameters
   vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
+//  vectorParams("param_b").set(vec((0 until hiddenSize).map(i => -0.5):_*))
+
+//  vectorParams("param_w").initialize(tanhBasicInitialization)
+//  matrixParams("param_Wx").initialize(tanhBasicInitialization)
+//  matrixParams("param_Wh").initialize(tanhBasicInitialization)
+
+  def sigmoidInitialization(): Double = sigmoid(random.nextDouble()) * 0.01 // [0, 0.01]
+  def tanhBasicInitialization(): Double = Math.abs(tanh(random.nextDouble())) * 0.1 // [0, 0.1]
+  def siInitialization(): Double = {
+    // ToDo
+    Math.abs(tanh(random.nextDouble())) * 0.1
+  }
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 

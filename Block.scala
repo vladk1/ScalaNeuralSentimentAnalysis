@@ -53,7 +53,7 @@ trait DefaultInitialization {
   * This trait defines a default way of initializing weights of parameters
   */
 trait GaussianDefaultInitialization extends DefaultInitialization {
-  def defaultInitialization(): Double = random.nextGaussian() * 0.1
+  def defaultInitialization(): Double = random.nextGaussian() * 0.1 // [-0.1, 0.1]
 }
 
 /**
@@ -112,9 +112,9 @@ class LossSum(override val args: Loss*) extends DoubleSum(args:_*) with Loss {
   * @param clip defines range in which gradients are clipped, i.e., (-clip, clip)
   */
 case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector] with GaussianDefaultInitialization {
-  var param: Vector = initialize(defaultInitialization)//vec((0 until dim).map(i => defaultInitialization()):_*)
-  val gradParam: Vector = DenseVector.zeros[Double](dim)//vec((0 until dim).map(i => 0.0):_*)
-//  val gradParam: Vector = initialize(defaultInitialization)
+  var param: Vector = initialize(defaultInitialization) // sigmoidInitialization
+  val gradParam: Vector = DenseVector.zeros[Double](dim)
+
   /**
     * @return the current value of the vector parameter and caches it into output
     */
@@ -164,8 +164,7 @@ case class VectorParam(dim: Int, clip: Double = 10.0) extends ParamBlock[Vector]
 case class Sum(args: Seq[Block[Vector]]) extends Block[Vector] {
   def forward(): Vector = {
     val stepSumVector = args.map(_.forward())
-    var init = DenseVector.zeros[Double](stepSumVector(0).output.activeSize)
-
+    val init = DenseVector.zeros[Double](stepSumVector(0).output.activeSize)
     output = stepSumVector.foldRight(init)((arg, sum) => {
       sum :+= arg
     })
@@ -303,7 +302,7 @@ case class L2Regularization[P](strength: Double, args: Block[P]*) extends Loss {
   * @param clip defines range in which gradients are clipped, i.e., (-clip, clip)
   */
 case class MatrixParam(dim1: Int, dim2: Int, clip: Double = 10.0) extends ParamBlock[Matrix] with GaussianDefaultInitialization {
-  var param: Matrix =  initialize(defaultInitialization)
+  var param: Matrix =  initialize(defaultInitialization) // sigmoidInitialization defaultInitialization tanhInitialisation
   val gradParam: Matrix = DenseMatrix.zeros[Double](dim1,dim2)
   def forward(): Matrix = {
     output = param

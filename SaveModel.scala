@@ -9,11 +9,11 @@ import scala.util.Random
 
 object SaveModel {
 
-  def writeWordVectorsFromModelToFile(bestModel:Model, maxWords:Int): Unit = {
+  def writeWordVectorsFromModelToFile(bestModel:Model, maxWords:Int, wordStringFile:String, wordParamFile:String, vectorParamFile:String): Unit = {
     println("Create word vector files.")
-    val actualWordWriter = new PrintWriter(new File("./data/assignment3/actual_word_param100.txt" ))
-    val wordWriter = new PrintWriter(new File("./data/assignment3/word_param100.txt" ))
-    val paramWriter = new PrintWriter(new File("./data/assignment3/vector_params100.txt" ))
+    val actualWordWriter = new PrintWriter(new File("./data/assignment3/"+wordStringFile )) //actual_word_param100.txt
+    val wordWriter = new PrintWriter(new File("./data/assignment3/"+wordParamFile )) //word_param100.txt
+    val paramWriter = new PrintWriter(new File("./data/assignment3/"+vectorParamFile )) //vector_params100.txt
     var count = 0
 
     val params: Array[(String,VectorParam)] = bestModel.vectorParams.toArray
@@ -70,20 +70,25 @@ object SaveModel {
     println("Done! : )")
   }
 
-  def printBestParamFromFile(filename:String, scoreByValueInd:Int):Unit = {
-      val bestParam = Source.fromFile("./data/assignment3/" + filename)
-        .getLines().foldLeft(Seq[String]())((a, line) => {
-          line.replace("wordDim=","").replace("vectorReg=","").replace("learningRate=","")
-          val params = line.split(" ").toSeq
-          if (a.length==0 || params(scoreByValueInd).toDouble > a(scoreByValueInd).toDouble) {
-//            println("best "+params)
-            params
-          } else {
-//            println("best "+a)
-            a
+  def printBestParamsFromLogFile(filename:String, parameterName:String, minimize:Boolean):Unit = {
+      val r = s"(?<=$parameterName=)(.*?)\\s".r
+      val startValue = if (minimize) Double.MaxValue else 0.0
+      var bestParamsLine = ""
+      Source.fromFile("./data/assignment3/" + filename)
+        .getLines().foldLeft(startValue)((bestParam, line) => {
+          r.findFirstIn(line) match {
+            case Some(newBestParamString) =>
+              val newBestParam = newBestParamString.toDouble
+              if ((minimize && newBestParam < bestParam) || (!minimize && newBestParam > bestParam)) {
+                bestParamsLine = line
+                newBestParam
+              } else {
+                bestParam
+              }
+            case None => bestParam
           }
         })
-      println(bestParam)
+      println(bestParamsLine)
   }
 
 }

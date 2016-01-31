@@ -12,17 +12,17 @@ object StochasticGradientDescentLearner extends App {
   var previousDevLoss = Double.MaxValue
 
   def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double, isEarlyStop:Boolean, parentParams:String, logFileName:String): Unit = {
+    println(parentParams)
     val epoch_loop = new Breaks
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
-    val startIterTime = System.nanoTime()
+
     epoch_loop.breakable {
       for (i <- 0 until maxEpochs) {
+        val startIterTime = System.nanoTime()
         var accLoss = 0.0
-        println(parentParams)
-
         for (j <- 0 until iterations) {
-          val time = (System.nanoTime() - startIterTime) / 1e6
-          if (j % 10000 == 0) print(s"Iter $j Time:$time\r")
+          val time = (System.nanoTime() - startIterTime) / 1e9
+//          if (j % 10000 == 0) print(s"Iter %d Time: %2.2fs\r".format(j, time))
           val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
           val modelLoss = model.loss(sentence, target)
           val localLoss = modelLoss.forward()
@@ -31,31 +31,28 @@ object StochasticGradientDescentLearner extends App {
           accLoss += localLoss
           if (localLoss.isNaN) epoch_loop.break()
         }
-
-        println("epoch=" + i + " train_acc_loss=" + accLoss)
-//        if (i > 10) {
-//          val start_time = System.nanoTime()
-          epochHook(i, model, epoch_loop, parentParams, logFileName, isEarlyStop)
-//          val diff = (System.nanoTime() - start_time) / 1e6
-//          println("timePerHook="+diff+"\n")
-//        }
+        println(s"Epoch $i Train_Loss $accLoss")
+        if (i % 1 == 0) {
+          epochHook(i, model, epoch_loop, parentParams, accLoss, logFileName, isEarlyStop)
+        }
       }
     }
-    val time = (System.nanoTime() - startIterTime) / 1e6
-    println("grid search step time = "+time)
     println()
   }
 
-  def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, logFileName:String, isEarlyStop:Boolean): Unit = {
-    val evaluatorOnTrainSet = Evaluator(model, Main.trainSetName) // (accuracy percentage, loss)
+  def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, trainLoss:Double, logFileName:String, isEarlyStop:Boolean): Unit = {
     val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
-    println("Epoch %4d\tTrain Acc %4.2f\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
-      iter, evaluatorOnTrainSet._1, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
+//    println("Epoch %4d\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
+//      iter, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
 
-//    saveBestSetToFile(iter, evaluatorOnTrainSet, evaluatorOnValidSet, parentParams, logFileName)
+    val devAcc = evaluatorOnValidSet._1
+    val devLoss = evaluatorOnValidSet._2
+    println(s"Epoch $iter $parentParams iter=$iter trainLoss=$trainLoss Dev_Loss=$devLoss Dev_Acc=$devAcc ")
+
+    saveToFile(iter, trainLoss, evaluatorOnValidSet, parentParams, logFileName)
 
     // early stopping if loss on valid. set not going down
-    if ((iter > 50) && evaluatorOnValidSet._2 > previousDevLoss && isEarlyStop) {
+    if ((iter > 20) && evaluatorOnValidSet._2 > previousDevLoss && isEarlyStop) {
       epoch_loop.break()
       println("Break! " + evaluatorOnValidSet._2)
     }
@@ -63,16 +60,11 @@ object StochasticGradientDescentLearner extends App {
   }
 
   // write acc and loss to file in format: (iter train_acc train_loss valid_acc valid_loss)
-  def saveBestSetToFile(iter: Int, evaluatorOnTrainSet: (Double, Double), evaluatorOnValidSet: (Double, Double), parentParams:String, logFileName:String) = {
+  def saveToFile(iter: Int, trainLoss:Double, evaluatorOnValidSet: (Double, Double), parentParams:String, logFileName:String) = {
     val historyWriter = new FileWriter("./data/assignment3/" + logFileName, true)
-    var outputToPrint = parentParams+" "+iter + " "
-    for (evalTrain <- evaluatorOnTrainSet.productIterator.toList) {
-      outputToPrint += (evalTrain.toString + " ")
-    }
-    for (evalValid <- evaluatorOnValidSet.productIterator.toList) {
-      outputToPrint += (evalValid.toString + " ")
-    }
-    println(parentParams+"\n")
+    val devAcc = evaluatorOnValidSet._1
+    val devLoss = evaluatorOnValidSet._2
+    val outputToPrint = s"$parentParams iter=$iter trainLoss=$trainLoss Dev_Loss=$devLoss Dev_Acc=$devAcc "
     historyWriter.write(outputToPrint+"\n")
     historyWriter.close()
   }

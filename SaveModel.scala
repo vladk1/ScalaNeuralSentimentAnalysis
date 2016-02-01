@@ -11,9 +11,9 @@ object SaveModel {
 
   def writeWordVectorsFromModelToFile(bestModel:Model, maxWords:Int, wordStringFile:String, wordParamFile:String, vectorParamFile:String): Unit = {
     println("Create word vector files.")
-    val actualWordWriter = new PrintWriter(new File("./data/assignment3/"+wordStringFile )) //actual_word_param100.txt
-    val wordWriter = new PrintWriter(new File("./data/assignment3/"+wordParamFile )) //word_param100.txt
-    val paramWriter = new PrintWriter(new File("./data/assignment3/"+vectorParamFile )) //vector_params100.txt
+    val actualWordWriter = new PrintWriter(new File("./data/assignment3/"+wordStringFile ))
+    val wordWriter = new PrintWriter(new File("./data/assignment3/"+wordParamFile ))
+    val paramWriter = new PrintWriter(new File("./data/assignment3/"+vectorParamFile ))
     var count = 0
 
     val params: Array[(String,VectorParam)] = bestModel.vectorParams.toArray
@@ -43,8 +43,8 @@ object SaveModel {
 
   def saveModelToFile(model:Model, fileName:String): Unit = {
     println("Save model to file.")
-    val now = Calendar.getInstance().getTime.toString
-    val actualWordWriter = new PrintWriter(new File("./data/assignment3/"+now+fileName ))
+    val now = Calendar.getInstance().getTime.toString.replace(" ","").replace("/","")
+    val actualWordWriter = new PrintWriter(new File("./data/assignment3/"+fileName ))
     var j = 0
     for ((paramName, paramBlock) <- model.vectorParams) {
       actualWordWriter.write(paramName+" ")

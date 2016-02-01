@@ -12,54 +12,69 @@ import java.io.FileWriter
  */
 object Main extends App {
 
-  val trainSetName = "train" // "debug"
+  val trainSetName = "train"
   val validationSetName = "dev"
   val testSetName = "test"
 
-//  question2()
+  question2()
 //  question3()
-  question4()
+//  question4()
 
-  case class question2()  {
+  // You can upload the model to test things:
+  // Epoch 18 wordDim=10 vectorReg=0.1 learningRate=0.01 iter=18 trainLoss=61503.20382496397 Dbest_sumofword_model_run_param_historyev_Loss=931.3517936096621 Dev_Acc=77.96271637816245
+//  val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_param_log_del.txt", isEarlyStop = false, 81)
+//  SaveModel.saveModelToFile(bestSumOfWordModel, "best_sumofword_model_vectors.txt")
+//  val evaluatorOnValidSet = Evaluator(bestSumOfWordModel, Main.validationSetName)
+//  val devAcc = evaluatorOnValidSet._1
+//  val devLoss = evaluatorOnValidSet._2
+//  println(s"Dev_Loss=$devLoss Dev_Acc=$devAcc ")
+
+  def question2()  {
+
+    // And load the best:
+    val loadedBestSumOfWordModel = loadBestSumOfWordVectorModel("best_sumofword_model_vectorsMonFeb01204132GMT2016.txt", 10)
+    val evaluatorOnValidSetFromFile = Evaluator(loadedBestSumOfWordModel, Main.validationSetName)
+    val devAccFromFile = evaluatorOnValidSetFromFile._1
+    val devLossFromFile = evaluatorOnValidSetFromFile._2
+    println(s"Dev_Loss=$devLossFromFile Dev_Acc=$devAccFromFile ")
+
+    get_predictions(loadedBestSumOfWordModel, testSetName, "predictions_own.txt")
+
     // ToDo q. 4.3.4)
-//    val wordDimSet = 8 to 14 by 2
-//    val vectorRegStrengthSet = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
-//    val learningRateSet = (-4.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
-//    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100, "sumofword_grid_search_param_history.txt")
-//    SaveModel.printBestParamsFromLogFile("sumofword_grid_search_param_history.txt", "Dev_Loss", minimize = true)
+    val wordDimSet = 8 to 14 by 2
+    val vectorRegStrengthSet = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
+    val learningRateSet = (-4.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
+    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100, "sumofword_grid_search_param_history.txt")
+    SaveModel.printBestParamsFromLogFile("sumofword_grid_search_param_history.txt", "Dev_Acc", minimize = false)
     // We obtained the best model with parameters:
-    // Epoch 18 wordDim=10 vectorReg=0.1 learningRate=0.01 iter=18 trainLoss=61503.20382496397 Dev_Loss=931.3517936096621 Dev_Acc=77.96271637816245
-    val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_run_param_history.txt", isEarlyStop = true)
+    // Epoch 18 wordDim=10 vectorReg=0.1 learningRate=0.01 iter=18 trainLoss=61503.20382496397 Dbest_sumofword_model_run_param_historyev_Loss=931.3517936096621 Dev_Acc=77.96271637816245
+    val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_run_param_history.txt", isEarlyStop = true, 100)
     SaveModel.printBestParamsFromLogFile("best_sumofword_model_run_param_history.txt", "Dev_Acc", minimize = false)
-    // You can load the model to test things:
-    //  SaveModel.saveModelToFile(bestSumOfWordModel, "best_sumofword_model_vectors.txt")
-    //  val loadedBestSumOfWordModel = loadBestSumOfWordVectorModel("best_sumofword_model_vectors.txt")
-    //  val loadedResult = loadedBestSumOfWordModel.predict("doesn't not enjoy re-piercing ears".split(" "))
-    //  println("result from the loaded model is "+loadedResult)
 
     // ToDo q. 4.3.5)
-    // iterate through 100 epochs of the best model
-    val iterateThroughSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "epoch_iteration_param_history.txt", isEarlyStop = false)
+    // iterate through 100 epochs of the best model. without early stopping
+    val iterateThroughSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "epoch_iteration_param_history.txt", isEarlyStop = false, 100)
 
     // ToDo q. 4.3.6)
     // prints vectorparams to file to visualize them later
-//    SaveModel.writeWordVectorsFromModelToFile(bestSumOfWordModel, 100, "actual_word_param100.txt", "word_param100.txt", "vector_params100.txt")
+    SaveModel.writeWordVectorsFromModelToFile(bestSumOfWordModel, 100, "actual_word_param100.txt", "word_param100.txt", "vector_params100.txt")
   }
 
   def question3():Unit = {
     // ToDo q. 4.4.2)
-    // run SGDL with RNN model for debug
+    // run norm SGDL with RNN model for debug
     val wordDimRange = IndexedSeq(7,11)
     val hiddenDimRange =  IndexedSeq(9, 11)
-    val regStrengthRange = IndexedSeq(0.0, Math.pow(10,-4), Math.pow(10,-3.5), Math.pow(10,-3)) //, Math.pow(10,-4), 3*Math.pow(10,-4), Math.pow(10,-3)
+    val regStrengthRange = IndexedSeq(0.0, Math.pow(10,-4), Math.pow(10,-3.5), Math.pow(10,-3))
     val learningRateRange = IndexedSeq(0.001, 0.01)
     runGridSearchRNN(wordDimRange, hiddenDimRange, regStrengthRange, regStrengthRange, learningRateRange, 100, "rnn_grid_search_param_history.txt")
     SaveModel.printBestParamsFromLogFile("rnn_grid_search_param_history.txt", "Dev_Acc", minimize = false)
 
-    //  We obtained the best model with parameters:
-    //  embeddingSize=9 hiddenSize=7 vecRegStrength=0.001 matRegStrength=0.001 learningRate=0.001 iter=22 trainLoss=56113.77 Dev_Loss=796.84 Dev_Acc=75.43
-    trainBestRNNModel(9, 7, 0.001, 0.001, 0.001, "best_rnn_model_run_param_history.txt", isEarlyStop = true)
+//  We obtained the best model with parameters:
+//    wordDim=11 hiddenDim=11 regStrength=1.0E-4 learningRate=0.001 iter=20 trainLoss=51394.85565085464 Dev_Loss=775.6154914921979 Dev_Acc=77.29693741677764
+    val bestRNN = trainBestRNNModel(11, 11, 1.0E-4, 1.0E-4, 0.001, "best_rnn_model_run_param_history.txt", isEarlyStop = false)
     SaveModel.printBestParamsFromLogFile("best_rnn_model_run_param_history.txt", "Dev_Acc", minimize = false)
+    SaveModel.saveModelToFile(bestRNN, "rnn_model_with_stepdecay1_vectors.txt")
   }
 
   def question4():Unit = {
@@ -88,7 +103,7 @@ object Main extends App {
     val LSTMModel = new LSTMModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
 
     val lstmParamsLogString =  s"lstmWordDim=$lstmWordDim lstmHiddenDim=$lstmHiddenDim lstmVectorRegulStrength=$lstmVectorRegulStrength lstmLearningRate=$lstmLearningRate"
-//    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
+    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
   }
 
 
@@ -101,16 +116,16 @@ object Main extends App {
     }
   }
 
-  def trainBestSumOfWordVectorsModel(embedSize:Int, regStrength:Double, learningRate:Double, outputFile:String, isEarlyStop:Boolean):Model = {
+  def trainBestSumOfWordVectorsModel(embedSize:Int, regStrength:Double, learningRate:Double, outputFile:String, isEarlyStop:Boolean, maxEpoch:Int):Model = {
     val testModel = new SumOfWordVectorsModel(embedSize, regStrength)
     val testParamsLogString = s"embeddingSize=$embedSize regStrength=$regStrength learningRate=$learningRate"
-    StochasticGradientDescentLearner(testModel, trainSetName, 100, learningRate, isEarlyStop, testParamsLogString, outputFile)
+    StochasticGradientDescentLearner(testModel, trainSetName, maxEpoch, learningRate, isEarlyStop, testParamsLogString, outputFile)
     testModel
   }
 
-  def loadBestSumOfWordVectorModel(modelFileName:String): Model = {
+  def loadBestSumOfWordVectorModel(modelFileName:String, embeddingSize:Int): Model = {
+    val loadedModel = new SumOfWordVectorsModel(embeddingSize, 0) // params doesn't matter as weights are updated already, except expectedEmbedSize
     SaveModel.loadModelFromFile(modelFileName)
-    val loadedModel = new SumOfWordVectorsModel(0, 0) // params doesn't matter as weights are updated already
     loadedModel
   }
 
@@ -158,18 +173,4 @@ object Main extends App {
     }
 
   }
-
-
-
-  /**
-   * Comment this in if you want to look at trained parameters
-   */
-  /*
-  for ((paramName, paramBlock) <- model.vectorParams) {
-    println(s"$paramName:\n${paramBlock.param}\n")
-  }
-  for ((paramName, paramBlock) <- model.matrixParams) {
-    println(s"$paramName:\n${paramBlock.param}\n")
-  }
-  */
 }

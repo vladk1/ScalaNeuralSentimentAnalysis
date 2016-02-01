@@ -2,7 +2,7 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import breeze.linalg._
 import breeze.numerics._
-//import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
+import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
 import scala.collection.mutable
 
@@ -84,9 +84,9 @@ trait Model {
   }
   def preprocessInput(s: Seq[String]): Seq[String] = {
     val noLinks = s.filterNot(word =>  word.contains("http") || word.contains("www")).mkString(" ")
-//    val filteredTokenizedSentence = SentenceSplitter(TokenSplitter(noLinks)).tokenWords.filter(word => isGood(word)).slice(0, 6)
-//    filteredTokenizedSentence
-    s
+    val filteredTokenizedSentence = SentenceSplitter(TokenSplitter(noLinks)).tokenWords.filter(word => isGood(word)) //.slice(0, 6)
+    if (filteredTokenizedSentence.isEmpty) s
+    else filteredTokenizedSentence
   }
 
   /**
@@ -124,7 +124,6 @@ class SumOfWordVectorsModel(embeddingSize: Int, regularizationStrength: Double =
   def scoreSentence(sentence: Block[Vector]): Block[Double] = Sigmoid(Dot(sentence, vectorParams("param_w")))
 
   def regularizer(words: Seq[Block[Vector]]): Loss = L2Regularization(regularizationStrength, words :+ vectorParams("param_w") :_*)
-
 }
 
 /**
@@ -150,8 +149,8 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   matrixParams += "param_Wh" -> MatrixParam(hiddenSize, hiddenSize)
 
   // Initialize parameters
-//  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
-  vectorParams("param_b").set(vec((0 until hiddenSize).map(i => -0.5):_*))
+  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
+//  vectorParams("param_b").set(vec((0 until hiddenSize).map(i => -0.5):_*))
 
 //  vectorParams("param_w").initialize(sigmoidInitialization)
 //  matrixParams("param_Wx").initialize(sigmoidInitialization)
@@ -425,7 +424,6 @@ class MulOfWordsModel(embeddingSize: Int, regularizationStrength: Double = 0.001
   var init = DenseVector.zeros[Double](embeddingSize)
   vectorParams("param_bias").set(init)
   init(0 to embeddingSize-1) := 1.0 / embeddingSize
-
   vectorParams("param_w").set(init)
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)

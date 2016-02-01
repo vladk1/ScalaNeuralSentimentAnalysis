@@ -45,15 +45,15 @@ object Main extends App {
     val wordDimSet = 8 to 14 by 2
     val vectorRegStrengthSet = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
     val learningRateSet = (-4.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
-//    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100, "sumofword_grid_search_param_history.txt")
+    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100, "sumofword_grid_search_param_history.txt")
     SaveModel.printBestParamsFromLogFile("sumofword_grid_search_param_history.txt", "Dev_Acc", minimize = false)
     // We obtained the best model with parameters:
     // Epoch 18 wordDim=10 vectorReg=0.1 learningRate=0.01 iter=18 trainLoss=61503.20382496397 Dbest_sumofword_model_run_param_historyev_Loss=931.3517936096621 Dev_Acc=77.96271637816245
-    val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_run_param_history.txt", isEarlyStop = false, 100)
+    val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_run_param_history.txt", isEarlyStop = true, 100)
     SaveModel.printBestParamsFromLogFile("best_sumofword_model_run_param_history.txt", "Dev_Acc", minimize = false)
 
     // ToDo q. 4.3.5)
-    // iterate through 100 epochs of the best model
+    // iterate through 100 epochs of the best model. without early stopping
     val iterateThroughSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "epoch_iteration_param_history.txt", isEarlyStop = false, 100)
 
     // ToDo q. 4.3.6)

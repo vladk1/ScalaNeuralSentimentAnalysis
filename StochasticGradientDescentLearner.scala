@@ -10,29 +10,30 @@ import scala.util.control.Breaks
 object StochasticGradientDescentLearner extends App {
 
   var previousDevLoss = Double.MaxValue
+  var learningRateWithDecrease = 0.0
 
   def apply(model: Model, corpus: String, maxEpochs: Int = 10, learningRate: Double, isEarlyStop:Boolean, parentParams:String, logFileName:String): Unit = {
     println(parentParams)
     val epoch_loop = new Breaks
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
-
+    learningRateWithDecrease = learningRate
     epoch_loop.breakable {
       for (i <- 0 until maxEpochs) {
         val startIterTime = System.nanoTime()
         var accLoss = 0.0
         for (j <- 0 until iterations) {
           val time = (System.nanoTime() - startIterTime) / 1e9
-//          if (j % 10000 == 0) print(s"Iter %d Time: %2.2fs\r".format(j, time))
+          if (j % 10000 == 0) print(s"Iter %d Time: %2.2fs\r".format(j, time))
           val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
           val modelLoss = model.loss(sentence, target)
           val localLoss = modelLoss.forward()
           modelLoss.backward()
-          modelLoss.update(learningRate) // updates parameters of the block
+          modelLoss.update(learningRateWithDecrease) // updates parameters of the block
           accLoss += localLoss
           if (localLoss.isNaN) epoch_loop.break()
         }
         println(s"Epoch $i Train_Loss $accLoss")
-        if (i % 1 == 0) {
+        if (i % 1 == 0 && i!=0) {
           epochHook(i, model, epoch_loop, parentParams, accLoss, logFileName, isEarlyStop)
         }
       }
@@ -42,8 +43,6 @@ object StochasticGradientDescentLearner extends App {
 
   def epochHook(iter: Int, model: Model, epoch_loop:Breaks, parentParams:String, trainLoss:Double, logFileName:String, isEarlyStop:Boolean): Unit = {
     val evaluatorOnValidSet = Evaluator(model, Main.validationSetName)
-//    println("Epoch %4d\tDev_Loss %4.2f\tDev_Acc %4.2f".format(
-//      iter, evaluatorOnValidSet._2, evaluatorOnValidSet._1))
 
     val devAcc = evaluatorOnValidSet._1
     val devLoss = evaluatorOnValidSet._2
@@ -56,6 +55,13 @@ object StochasticGradientDescentLearner extends App {
       epoch_loop.break()
       println("Break! " + evaluatorOnValidSet._2)
     }
+
+//    Step Decay
+//    if ((iter % 5 == 0) && evaluatorOnValidSet._2 > previousDevLoss) {
+//      learningRateWithDecrease = learningRateWithDecrease*0.5
+//      println("Step Decay " + learningRateWithDecrease)
+//    }
+
     previousDevLoss = evaluatorOnValidSet._2
   }
 

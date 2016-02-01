@@ -2,8 +2,6 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 //import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
-import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
-
 import scala.util.Random
 
 /**
@@ -27,6 +25,7 @@ object SentimentAnalysisCorpus {
 //  var debug: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/debug.tsv", "ISO-8859-1").getLines())
 //  var test: Corpus = loadCorpus(io.Source.fromFile("./data/assignment3/test.tsv", "ISO-8859-1").getLines())
 
+  // to run with AWS
   var train: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/train.tsv")).getLines())
   var dev: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/dev.tsv")).getLines())
   var debug: Corpus = loadCorpus(io.Source.fromInputStream(getClass.getResourceAsStream("/debug.tsv")).getLines())

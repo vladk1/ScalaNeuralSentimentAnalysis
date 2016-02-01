@@ -15,7 +15,6 @@ object Evaluator {
 
       val modelLoss = model.loss(sentence, target)
       accLoss += modelLoss.forward()
-//      println(accLoss)
     }
     (100 * (correct / total), accLoss)
   }

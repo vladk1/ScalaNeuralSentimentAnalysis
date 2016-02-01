@@ -17,9 +17,8 @@ object Main extends App {
   val testSetName = "test"
 
 //  question2()
-  question3()
-//  question4()
-
+//  question3()
+  question4()
 
   case class Question2()  {
     // ToDo q. 4.3.4)
@@ -50,8 +49,8 @@ object Main extends App {
   def question3():Unit = {
     // ToDo q. 4.4.2)
     // run norm SGDL with RNN model for debug
-    val wordDimRange = 7 to 11 by 2
-    val hiddenDimRange = 7 to 11 by 2
+    val wordDimRange = IndexedSeq(7,11)
+    val hiddenDimRange =  IndexedSeq(9, 11)
     val regStrengthRange = IndexedSeq(0.0, Math.pow(10,-4), Math.pow(10,-3.5), Math.pow(10,-3)) //, Math.pow(10,-4), 3*Math.pow(10,-4), Math.pow(10,-3)
     val learningRateRange = IndexedSeq(0.001, 0.01)
     runGridSearchRNN(wordDimRange, hiddenDimRange, regStrengthRange, regStrengthRange, learningRateRange, 100, "rnn_grid_search_param_history.txt")
@@ -64,6 +63,23 @@ object Main extends App {
   }
 
   def question4():Unit = {
+
+    // MULSUMMODEL
+    val wordDim = 11
+    val regStrength = 0.001
+    val learningRate = 0.03
+    val mulOfWordModel = new MulOfWordsModel(wordDim, regStrength)
+    val mulOfWordParamsLogString = s"wordDim=$wordDim regStrength=$regStrength learningRate=$learningRate"
+    StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, learningRate, isEarlyStop=true, mulOfWordParamsLogString, "mulOfWordModelLog.txt")
+
+    get_predictions(mulOfWordModel, testSetName, "predictions_own.txt")
+
+    val wordDimSet = 8 to 11 by 1
+    val vectorRegStrengthSet = (-4.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
+    val learningRateSet = (-4.0 to -1.0 by 0.5).map(a => Math.pow(10,a))
+//    runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
+
+    // LSTM
     val lstmWordDim = 10
     val lstmHiddenDim = 10
     val lstmVectorRegulStrength = 0.001
@@ -72,23 +88,7 @@ object Main extends App {
     val LSTMModel = new LSTMModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
 
     val lstmParamsLogString =  s"lstmWordDim=$lstmWordDim lstmHiddenDim=$lstmHiddenDim lstmVectorRegulStrength=$lstmVectorRegulStrength lstmLearningRate=$lstmLearningRate"
-    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
-
-
-    val wordDim = 10
-    val regStrength = 0.01
-    val learningRate = 0.01
-    val mulOfWordModel = new MulOfWordsModel(wordDim, regStrength)
-    val mulOfWordParamsLogString = s"wordDim=$wordDim regStrength=$regStrength learningRate=$learningRate"
-    StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, 0.01, isEarlyStop=true, mulOfWordParamsLogString, "mulOfWordModelLog.txt")
-
-    get_predictions(mulOfWordModel, testSetName, "predictions_own.txt")
-
-    val wordDimSet = 6 to 11 by 1
-    val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
-    val learningRateSet = (-5.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
-    runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
-
+//    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
   }
 
 
@@ -123,7 +123,7 @@ object Main extends App {
     bestRNNmodel
   }
 
-  def runGridSearchRNN(wordDimRange:Range, hiddenDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],
+  def runGridSearchRNN(wordDimRange:IndexedSeq[Int], hiddenDimSet:IndexedSeq[Int], vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],
                        learningRateSet:IndexedSeq[Double], epochs:Int, outputFile:String): Unit = {
     for (wordDim <- wordDimRange; hiddenDim <- hiddenDimSet; regStrength <- vectorRegStrengthSet; learningRate <- learningRateSet) {
       LookupTable.trainableWordVectors.clear()
@@ -147,7 +147,7 @@ object Main extends App {
     val predictionWriter = new FileWriter("./data/assignment3/" + fileName)
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
     println("there are %d sentences in test set".format(iterations))
-    for(iter <- 0 to iterations){
+    for(iter <- -1 until iterations - 1){
       val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
       predictionWriter.write(BoolToSentiment(model.predict(sentence)) + "\n")
     }

@@ -11,9 +11,17 @@ object Main extends App {
   val validationSetName = "dev"
   val testSetName = "test"
 
+  /**********************************************************************************
+                        USE THESE METHODS AS A WAY TO RUN
+                                EACH QUESTION
+                  1 question1()  - SumOfWordVectorsModel
+                  2 question2() - RNN
+                  3 question3() - SkyIsTheLimit (a) MulOfWords (b) LSTM (WARNING: Slow!)
+    *********************************************************************************/
+  
   question2()
-  question3()
-  question4()
+//  question3()
+//  question4()
 
   def question2()  {
 
@@ -175,7 +183,7 @@ object Main extends App {
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
     for(iter <- -1 until iterations - 1){
       val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
-      predictionWriter.write(BoolToSentiment(model.predict(sentence)) + "\n")
+      predictionWriter.write(BoolToSentiment(model.predict(sentence)) + "  " + sentence + "\n")
     }
     predictionWriter.close()
   }

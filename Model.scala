@@ -150,15 +150,15 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   matrixParams += "param_Wh" -> MatrixParam(hiddenSize, hiddenSize)
 
   // Initialize parameters
-  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
-//  vectorParams("param_b").set(vec((0 until hiddenSize).map(i => -0.5):_*))
+//  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
+  vectorParams("param_b").set(vec((0 until hiddenSize).map(i => -0.5):_*))
 
 //  vectorParams("param_w").initialize(sigmoidInitialization)
 //  matrixParams("param_Wx").initialize(sigmoidInitialization)
 //  matrixParams("param_Wh").initialize(sigmoidInitialization)
 
-  def sigmoidInitialization(): Double = sigmoid(random.nextDouble()) * 0.01 // [0, 0.01]
-  def tanhBasicInitialization(): Double = Math.abs(tanh(random.nextDouble())) * 0.1 // [0, 0.1]
+  def sigmoidInitialization(): Double = sigmoid(random.nextDouble()) * 0.01
+  def tanhBasicInitialization(): Double = Math.abs(tanh(random.nextDouble())) * 0.1
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 
@@ -423,10 +423,10 @@ class MulOfWordsModel(embeddingSize: Int, regularizationStrength: Double = 0.001
   vectorParams += "param_bias" -> VectorParam(embeddingSize)
 
   var init = DenseVector.zeros[Double](embeddingSize)
-  init(0 to embeddingSize-1) := 1.0 / embeddingSize
-  vectorParams("param_w").set(init)
   vectorParams("param_bias").set(init)
+  init(0 to embeddingSize-1) := 1.0 / embeddingSize
 
+  vectorParams("param_w").set(init)
 
   def wordToVector(word: String): Block[Vector] = LookupTable.addTrainableWordVector(word, embeddingSize)
 

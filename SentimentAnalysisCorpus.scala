@@ -2,7 +2,7 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 //import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
-import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
+//import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
 import scala.util.Random
 
@@ -74,4 +74,38 @@ object SentimentAnalysisCorpus {
       testCounter = testCounter + 1
       test(testCounter)
   }
+
+  def getExamplePrint(corpus: String): Example = corpus match {
+    case "train" =>
+      if (trainCounter == train.length - 1) {
+        train = random.shuffle(train)
+        trainCounter = -1
+      }
+      trainCounter = trainCounter + 1
+      train(trainCounter)
+    case "dev" =>
+      if (devCounter == dev.length - 1) {
+        dev = random.shuffle(dev)
+        devCounter = -1
+      }
+      devCounter = devCounter + 1
+      dev(devCounter)
+    case "debug" =>
+      if (debugCounter == debug.length - 1) {
+        debug = random.shuffle(debug)
+        debugCounter = -1
+      }
+      debugCounter = debugCounter + 1
+      debug(debugCounter)
+    case "test" =>
+      if (testCounter == test.length - 1) {
+        test = random.shuffle(test)
+        testCounter = 0
+      }
+      val ex = test(testCounter)
+      testCounter = testCounter + 1
+      ex
+  }
+
+
 }

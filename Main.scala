@@ -17,17 +17,17 @@ object Main extends App {
   val testSetName = "test"
 
 //  question2()
-  question3()
-//  question4()
+//  question3()
+  question4()
 
 
-  case class Question2()  {
+  case class question2()  {
     // ToDo q. 4.3.4)
-    val wordDimSet = 8 to 14 by 2
-    val vectorRegStrengthSet = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
-    val learningRateSet = (-4.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
-    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100, "sumofword_grid_search_param_history.txt")
-    SaveModel.printBestParamsFromLogFile("sumofword_grid_search_param_history.txt", "Dev_Loss", minimize = true)
+//    val wordDimSet = 8 to 14 by 2
+//    val vectorRegStrengthSet = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
+//    val learningRateSet = (-4.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
+//    runGridSearch(wordDimSet, vectorRegStrengthSet, learningRateSet, 100, "sumofword_grid_search_param_history.txt")
+//    SaveModel.printBestParamsFromLogFile("sumofword_grid_search_param_history.txt", "Dev_Loss", minimize = true)
     // We obtained the best model with parameters:
     // Epoch 18 wordDim=10 vectorReg=0.1 learningRate=0.01 iter=18 trainLoss=61503.20382496397 Dev_Loss=931.3517936096621 Dev_Acc=77.96271637816245
     val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_run_param_history.txt", isEarlyStop = true)
@@ -44,18 +44,18 @@ object Main extends App {
 
     // ToDo q. 4.3.6)
     // prints vectorparams to file to visualize them later
-    SaveModel.writeWordVectorsFromModelToFile(bestSumOfWordModel, 100, "actual_word_param100.txt", "word_param100.txt", "vector_params100.txt")
+//    SaveModel.writeWordVectorsFromModelToFile(bestSumOfWordModel, 100, "actual_word_param100.txt", "word_param100.txt", "vector_params100.txt")
   }
 
   def question3():Unit = {
     // ToDo q. 4.4.2)
     // run norm SGDL with RNN model for debug
-    val wordDimRange = 7 to 11 by 2
-    val hiddenDimRange = 7 to 11 by 2
-    val regStrengthRange = IndexedSeq(0.0, Math.pow(10,-4), Math.pow(10,-3.5), Math.pow(10,-3)) //, Math.pow(10,-4), 3*Math.pow(10,-4), Math.pow(10,-3)
-    val learningRateRange = IndexedSeq(0.001, 0.01)
-    runGridSearchRNN(wordDimRange, hiddenDimRange, regStrengthRange, regStrengthRange, learningRateRange, 100, "rnn_grid_search_param_history.txt")
-    SaveModel.printBestParamsFromLogFile("rnn_grid_search_param_history.txt", "Dev_Acc", minimize = false)
+//    val wordDimRange = IndexedSeq(7,11)
+//    val hiddenDimRange =  IndexedSeq(9, 11)
+//    val regStrengthRange = IndexedSeq(0.0, Math.pow(10,-4), Math.pow(10,-3.5), Math.pow(10,-3)) //, Math.pow(10,-4), 3*Math.pow(10,-4), Math.pow(10,-3)
+//    val learningRateRange = IndexedSeq(0.001, 0.01)
+//    runGridSearchRNN(wordDimRange, hiddenDimRange, regStrengthRange, regStrengthRange, learningRateRange, 100, "rnn_grid_search_param_history.txt")
+//    SaveModel.printBestParamsFromLogFile("rnn_grid_search_param_history.txt", "Dev_Acc", minimize = false)
 
     //  We obtained the best model with parameters:
     //  embeddingSize=9 hiddenSize=7 vecRegStrength=0.001 matRegStrength=0.001 learningRate=0.001 iter=22 trainLoss=56113.77 Dev_Loss=796.84 Dev_Acc=75.43
@@ -64,17 +64,17 @@ object Main extends App {
   }
 
   def question4():Unit = {
-    val lstmWordDim = 10
-    val lstmHiddenDim = 10
-    val lstmVectorRegulStrength = 0.001
-    val lstmMatrixRegulStrength = 0.001
-    val lstmLearningRate = 0.05
-    val LSTMModel = new LSTMModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
-
-    val lstmParamsLogString =  s"lstmWordDim=$lstmWordDim lstmHiddenDim=$lstmHiddenDim lstmVectorRegulStrength=$lstmVectorRegulStrength lstmLearningRate=$lstmLearningRate"
-    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
-
-
+//    val lstmWordDim = 10
+//    val lstmHiddenDim = 10
+//    val lstmVectorRegulStrength = 0.001
+//    val lstmMatrixRegulStrength = 0.001
+//    val lstmLearningRate = 0.05
+//    val LSTMModel = new LSTMModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
+//
+//    val lstmParamsLogString =  s"lstmWordDim=$lstmWordDim lstmHiddenDim=$lstmHiddenDim lstmVectorRegulStrength=$lstmVectorRegulStrength lstmLearningRate=$lstmLearningRate"
+//    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
+//
+//
     val wordDim = 10
     val regStrength = 0.01
     val learningRate = 0.01
@@ -84,10 +84,10 @@ object Main extends App {
 
     get_predictions(mulOfWordModel, testSetName, "predictions_own.txt")
 
-    val wordDimSet = 6 to 11 by 1
-    val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
-    val learningRateSet = (-5.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
-    runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
+//    val wordDimSet = 6 to 11 by 1
+//    val vectorRegStrengthSet = (-5.0 to 0.0 by 1.0).map(a => Math.pow(10,a))
+//    val learningRateSet = (-5.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
+//    runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
 
   }
 
@@ -123,7 +123,7 @@ object Main extends App {
     bestRNNmodel
   }
 
-  def runGridSearchRNN(wordDimRange:Range, hiddenDimSet:Range, vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],
+  def runGridSearchRNN(wordDimRange:IndexedSeq[Int], hiddenDimSet:IndexedSeq[Int], vectorRegStrengthSet:IndexedSeq[Double], matrixRegStrengthSet:IndexedSeq[Double],
                        learningRateSet:IndexedSeq[Double], epochs:Int, outputFile:String): Unit = {
     for (wordDim <- wordDimRange; hiddenDim <- hiddenDimSet; regStrength <- vectorRegStrengthSet; learningRate <- learningRateSet) {
       LookupTable.trainableWordVectors.clear()
@@ -147,8 +147,8 @@ object Main extends App {
     val predictionWriter = new FileWriter("./data/assignment3/" + fileName)
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
     println("there are %d sentences in test set".format(iterations))
-    for(iter <- 0 to iterations){
-      val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
+    for(iter <- 0 until iterations){
+      val (sentence, target) = SentimentAnalysisCorpus.getExamplePrint(corpus)
       predictionWriter.write(BoolToSentiment(model.predict(sentence)) + "\n")
     }
     predictionWriter.close()

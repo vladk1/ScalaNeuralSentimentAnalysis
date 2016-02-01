@@ -2,7 +2,7 @@ package uk.ac.ucl.cs.mr.statnlpbook.assignment3
 
 import breeze.linalg._
 import breeze.numerics._
-import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
+//import ml.wolfe.nlp.{SentenceSplitter, TokenSplitter}
 
 import scala.collection.mutable
 
@@ -84,8 +84,10 @@ trait Model {
   }
   def preprocessInput(s: Seq[String]): Seq[String] = {
     val noLinks = s.filterNot(word =>  word.contains("http") || word.contains("www")).mkString(" ")
-    val filteredTokenizedSentence = SentenceSplitter(TokenSplitter(noLinks)).tokenWords.filter(word => isGood(word)).slice(0, 6)
-    filteredTokenizedSentence
+//    val filteredTokenizedSentence = SentenceSplitter(TokenSplitter(noLinks)).tokenWords.filter(word => isGood(word)).slice(0, 6)
+//    filteredTokenizedSentence
+
+    s
   }
 
   /**
@@ -149,8 +151,8 @@ class RecurrentNeuralNetworkModel(embeddingSize: Int, hiddenSize: Int,
   matrixParams += "param_Wh" -> MatrixParam(hiddenSize, hiddenSize)
 
   // Initialize parameters
-  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
-//  vectorParams("param_b").set(vec((0 until hiddenSize).map(i => -0.5):_*))
+//  vectorParams("param_b").set(DenseVector.zeros[Double](hiddenSize))
+  vectorParams("param_b").set(vec((0 until hiddenSize).map(i => -0.5):_*))
 
 //  vectorParams("param_w").initialize(tanhBasicInitialization)
 //  matrixParams("param_Wx").initialize(tanhBasicInitialization)

@@ -73,14 +73,12 @@ trait Model {
     new LossSum(NegativeLogLikelihoodLoss(score, targetScore), regularizer(wordVectors))
   }
 
-
   def isGood(s: String): Boolean = {
     if ((s.size <= 2) ||
       (s.charAt(0) == '@') ||
       (s.matches("[\\p{Punct}\\s]+") && !s.matches("!")) ||
       s.matches("[0-9]") ) false
     else true
-    //       s.matches("[^\\w_\\s]+") || //to check non-english words
   }
   def preprocessInput(s: Seq[String]): Seq[String] = {
     val noLinks = s.filterNot(word =>  word.contains("http") || word.contains("www")).mkString(" ")
@@ -284,10 +282,7 @@ class LSTMModel(embeddingSize: Int, hiddenSize: Int,
     val l2VectorArgs = (vectorParamLabels ++ biasLabels).foldLeft(words)((args, paramLabel) => {
       args :+ vectorParams(paramLabel)
     })
-//    use to remove word embeddings
-//    val l2VectorArgs = (vectorParamLabels ++ biasLabels).map(paramLabel => {
-//      vectorParams(paramLabel)
-//    })
+
     val l2MatrixArgs = (matrixEmbeddLabels ++ matrixHiddenLabels).map(paramLabel => {
       matrixParams(paramLabel)
     })
@@ -387,11 +382,6 @@ class GRUModel(embeddingSize: Int, hiddenSize: Int,
       args :+ vectorParams(paramLabel)
     })
 
-//    use to remove word embeddings
-//    val l2VectorArgs = (vectorParamLabels ++ biasLabels).map(paramLabel => {
-//      vectorParams(paramLabel)
-//    })
-
     val l2MatrixArgs = (matrixEmbeddLabels ++ matrixHiddenLabels).map( paramLabel => {
       matrixParams(paramLabel)
     })
@@ -402,7 +392,6 @@ class GRUModel(embeddingSize: Int, hiddenSize: Int,
     )
   }
 }
-
 
 
 /**

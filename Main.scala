@@ -5,11 +5,6 @@ import java.io.FileWriter
 /**
  * @author rockt
  */
-/**
- * Example training of a model
- *
- * Problems 2/3/4: perform a grid search over the parameters below
- */
 object Main extends App {
 
   val trainSetName = "train"
@@ -17,30 +12,35 @@ object Main extends App {
   val testSetName = "test"
 
   question2()
-//  question3()
-//  question4()
-
-  // You can upload the model to test things:
-  // Epoch 18 wordDim=10 vectorReg=0.1 learningRate=0.01 iter=18 trainLoss=61503.20382496397 Dbest_sumofword_model_run_param_historyev_Loss=931.3517936096621 Dev_Acc=77.96271637816245
-//  val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_param_log_del.txt", isEarlyStop = false, 81)
-//  SaveModel.saveModelToFile(bestSumOfWordModel, "best_sumofword_model_vectors.txt")
-//  val evaluatorOnValidSet = Evaluator(bestSumOfWordModel, Main.validationSetName)
-//  val devAcc = evaluatorOnValidSet._1
-//  val devLoss = evaluatorOnValidSet._2
-//  println(s"Dev_Loss=$devLoss Dev_Acc=$devAcc ")
+  question3()
+  question4()
 
   def question2()  {
 
-    // And load the best:
-    val loadedBestSumOfWordModel = loadBestSumOfWordVectorModel("best_sumofword_model_vectorsMonFeb01204132GMT2016.txt", 10)
-    val evaluatorOnValidSetFromFile = Evaluator(loadedBestSumOfWordModel, Main.validationSetName)
-    val devAccFromFile = evaluatorOnValidSetFromFile._1
-    val devLossFromFile = evaluatorOnValidSetFromFile._2
-    println(s"Dev_Loss=$devLossFromFile Dev_Acc=$devAccFromFile ")
+    /**********************************************************************************
+                        q 4.3.2 Load best model from file
+      *********************************************************************************/
+//      If best model file is added to data directory uncomment this section to load pre-trained sum of words
+//      File was provided as part of submission
+//    val loadedBestSumOfWordModel = loadBestSumOfWordVectorModel("best_sumofword_model_vectorsMonFeb01204132GMT2016.txt", 10)
+//    val evaluatorOnValidSetFromFile = Evaluator(loadedBestSumOfWordModel, Main.validationSetName)
+//    val devAccFromFile = evaluatorOnValidSetFromFile._1
+//    val devLossFromFile = evaluatorOnValidSetFromFile._2
+//    println(s"Dev_Loss=$devLossFromFile Dev_Acc=$devAccFromFile ")
 
-    get_predictions(loadedBestSumOfWordModel, testSetName, "predictions_own.txt")
+    val wordDim = 10
+    val regStrength = 0.1
+    val learningRate = 0.01
+    val sumOfWordsModel = new SumOfWordVectorsModel(wordDim, regStrength)
+    val sumOfWordParamsLogString = s"wordDim=$wordDim regStrength=$regStrength learningRate=$learningRate"
+    StochasticGradientDescentLearner(sumOfWordsModel, trainSetName, 100, learningRate, isEarlyStop=true, sumOfWordParamsLogString, "sumOfWordsSGD.txt")
 
-    // ToDo q. 4.3.4)
+    // print test predictions for SumOfWords model
+    get_predictions(sumOfWordsModel, testSetName, "predictions.txt")
+
+    /**********************************************************************************
+                          q 4.3.4 Grid Search for Sum of Words
+     *********************************************************************************/
     val wordDimSet = 8 to 14 by 2
     val vectorRegStrengthSet = (-5.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
     val learningRateSet = (-4.0 to 0.0 by 0.5).map(a => Math.pow(10,a))
@@ -51,50 +51,64 @@ object Main extends App {
     val bestSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "best_sumofword_model_run_param_history.txt", isEarlyStop = true, 100)
     SaveModel.printBestParamsFromLogFile("best_sumofword_model_run_param_history.txt", "Dev_Acc", minimize = false)
 
-    // ToDo q. 4.3.5)
-    // iterate through 100 epochs of the best model. without early stopping
+    /**********************************************************************************
+                              q 4.3.5 Loss Analysis
+      *********************************************************************************/
     val iterateThroughSumOfWordModel = trainBestSumOfWordVectorsModel(10, 0.1, 0.01, "epoch_iteration_param_history.txt", isEarlyStop = false, 100)
 
-    // ToDo q. 4.3.6)
-    // prints vectorparams to file to visualize them later
-    SaveModel.writeWordVectorsFromModelToFile(bestSumOfWordModel, 100, "actual_word_param100.txt", "word_param100.txt", "vector_params100.txt")
+    /**********************************************************************************
+                  q 4.3.6 prints vectorparams to file to visualize them later
+      *********************************************************************************/
+//    SaveModel.writeWordVectorsFromModelToFile(bestSumOfWordModel, 100, "actual_word_param100.txt", "word_param100.txt", "vector_params100.txt")
   }
 
   def question3():Unit = {
-    // ToDo q. 4.4.2)
-    // run norm SGDL with RNN model for debug
+    /**********************************************************************************
+                        q 4.4.2 Run RNN with best parameters
+      *********************************************************************************/
+    //  We obtained the best model with parameters:
+    //  wordDim=11 hiddenDim=11 regStrength=1.0E-4 learningRate=0.001 iter=20 trainLoss=51394.85565085464 Dev_Loss=775.6154914921979 Dev_Acc=77.29693741677764
+    val bestRNN = trainBestRNNModel(11, 11, 1.0E-4, 1.0E-4, 0.001, "best_rnn_model_run_param_history.txt", isEarlyStop = false)
+    SaveModel.printBestParamsFromLogFile("best_rnn_model_run_param_history.txt", "Dev_Acc", minimize = false)
+    SaveModel.saveModelToFile(bestRNN, "rnn_model_with_stepdecay1_vectors.txt")
+
+    /**********************************************************************************
+                        q 4.4.3 Run RNN Grid Search
+      *********************************************************************************/
     val wordDimRange = IndexedSeq(7,11)
     val hiddenDimRange =  IndexedSeq(9, 11)
     val regStrengthRange = IndexedSeq(0.0, Math.pow(10,-4), Math.pow(10,-3.5), Math.pow(10,-3))
     val learningRateRange = IndexedSeq(0.001, 0.01)
-    runGridSearchRNN(wordDimRange, hiddenDimRange, regStrengthRange, regStrengthRange, learningRateRange, 100, "rnn_grid_search_param_history.txt")
-    SaveModel.printBestParamsFromLogFile("rnn_grid_search_param_history.txt", "Dev_Acc", minimize = false)
-
-//  We obtained the best model with parameters:
-//    wordDim=11 hiddenDim=11 regStrength=1.0E-4 learningRate=0.001 iter=20 trainLoss=51394.85565085464 Dev_Loss=775.6154914921979 Dev_Acc=77.29693741677764
-    val bestRNN = trainBestRNNModel(11, 11, 1.0E-4, 1.0E-4, 0.001, "best_rnn_model_run_param_history.txt", isEarlyStop = false)
-    SaveModel.printBestParamsFromLogFile("best_rnn_model_run_param_history.txt", "Dev_Acc", minimize = false)
-    SaveModel.saveModelToFile(bestRNN, "rnn_model_with_stepdecay1_vectors.txt")
+//    runGridSearchRNN(wordDimRange, hiddenDimRange, regStrengthRange, regStrengthRange, learningRateRange, 100, "rnn_grid_search_param_history.txt")
+//    SaveModel.printBestParamsFromLogFile("rnn_grid_search_param_history.txt", "Dev_Acc", minimize = false)
   }
 
   def question4():Unit = {
 
-    // MUL-SUM-MODEL
+    /**********************************************************************************
+                       q 4.5 Run MulSum of Words Model with best parameters
+      *********************************************************************************/
     val wordDim = 11
     val regStrength = 0.001
     val learningRate = 0.03
-    val mulOfWordModel = new MulOfWordsModel(wordDim, regStrength)
+    val mulOfWordModel = new MulOfWordsModel(11, regStrength)
     val mulOfWordParamsLogString = s"wordDim=$wordDim regStrength=$regStrength learningRate=$learningRate"
     StochasticGradientDescentLearner(mulOfWordModel, trainSetName, 100, learningRate, isEarlyStop=true, mulOfWordParamsLogString, "mulOfWordModelLog.txt")
 
+    // print test predictions for mulOfWords model
     get_predictions(mulOfWordModel, testSetName, "predictions_own.txt")
 
+    /**********************************************************************************
+                        Run Grid Search for MulSum of Words Model
+      *********************************************************************************/
     val wordDimSet = 8 to 11 by 1
     val vectorRegStrengthSet = (-4.0 to -1.0 by 1.0).map(a => Math.pow(10,a))
     val learningRateSet = (-4.0 to -1.0 by 0.5).map(a => Math.pow(10,a))
-    runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
+//    runGridSearchOnMultOfWord(wordDimSet, vectorRegStrengthSet, learningRateSet, 100)
 
-    // LSTM
+    /**********************************************************************************
+                                      Run LSTM Model
+      *********************************************************************************/
     val lstmWordDim = 10
     val lstmHiddenDim = 10
     val lstmVectorRegulStrength = 0.001
@@ -103,7 +117,7 @@ object Main extends App {
     val LSTMModel = new LSTMModel(lstmWordDim, lstmHiddenDim, lstmVectorRegulStrength, lstmMatrixRegulStrength)
 
     val lstmParamsLogString =  s"lstmWordDim=$lstmWordDim lstmHiddenDim=$lstmHiddenDim lstmVectorRegulStrength=$lstmVectorRegulStrength lstmLearningRate=$lstmLearningRate"
-    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
+//    StochasticGradientDescentLearner(LSTMModel, trainSetName, 100, lstmLearningRate, isEarlyStop=true, lstmParamsLogString, "lstm_run_param_history.txt")
   }
 
 

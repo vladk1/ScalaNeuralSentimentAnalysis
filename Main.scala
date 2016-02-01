@@ -11,9 +11,16 @@ object Main extends App {
   val validationSetName = "dev"
   val testSetName = "test"
 
+  /**********************************************************************************
+                       USE THESE METHODS AS A WAY TO RUN
+                               EACH QUESTION
+                 1 question2()  - SumOfWordVectorsModel
+                 2 question3() - RNN
+                 3 question4() - SkyIsTheLimit (a) MulOfWords (b) LSTM (WARNING: Slow!)
+    *********************************************************************************/
   question2()
-  question3()
-  question4()
+//  question3()
+//  question4()
 
   def question2()  {
 

@@ -18,7 +18,7 @@ object Main extends App {
                  2 question3() - RNN
                  3 question4() - SkyIsTheLimit (a) MulOfWords (b) LSTM (WARNING: Slow!)
     *********************************************************************************/
-  question2()
+//  question2()
 //  question3()
 //  question4()
 
@@ -180,7 +180,7 @@ object Main extends App {
   def get_predictions(model: Model, corpus: String, fileName: String): Unit ={
     val predictionWriter = new FileWriter("./data/assignment3/" + fileName)
     val iterations = SentimentAnalysisCorpus.numExamples(corpus)
-    for(iter <- -1 until iterations - 1){
+    for(iter <- 0 until iterations){
       val (sentence, target) = SentimentAnalysisCorpus.getExample(corpus)
       predictionWriter.write(BoolToSentiment(model.predict(sentence)) + "\n")
     }

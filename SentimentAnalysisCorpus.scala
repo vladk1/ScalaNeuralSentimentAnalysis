@@ -62,9 +62,10 @@ object SentimentAnalysisCorpus {
     case "test" =>
       if (testCounter == test.length - 1) {
         test = random.shuffle(test)
-        testCounter = -1
+        testCounter = 0
       }
+      val ex = test(testCounter)
       testCounter = testCounter + 1
-      test(testCounter)
+      ex
   }
 }
